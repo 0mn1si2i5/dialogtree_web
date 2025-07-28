@@ -93,7 +93,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"why can birds fly\",\n    \"categoryID\": 1\n}",
+							"raw": "{\n    \"title\": \"太阳系\",\n    \"categoryID\": 1\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -177,14 +177,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseURL_8080}}/api/sessions/4/tree",
+							"raw": "{{baseURL_8080}}/api/sessions/10/tree",
 							"host": [
 								"{{baseURL_8080}}"
 							],
 							"path": [
 								"api",
 								"sessions",
-								"4",
+								"10",
 								"tree"
 							]
 						}
@@ -252,14 +252,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseURL_8080}}/api/sessions/4/tree",
+									"raw": "{{baseURL_8080}}/api/sessions/6/tree",
 									"host": [
 										"{{baseURL_8080}}"
 									],
 									"path": [
 										"api",
 										"sessions",
-										"4",
+										"6",
 										"tree"
 									]
 								}
@@ -283,6 +283,53 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在\"\n}"
+						},
+						{
+							"name": "resp: tree example",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions/10/tree",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions",
+										"10",
+										"tree"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 16:52:43 GMT"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"dialogTree\": [\n            {\n                \"dialogId\": 24,\n                \"parentId\": null,\n                \"conversations\": [\n                    {\n                        \"id\": 29,\n                        \"title\": \"太阳系中有多少个类地行星？\",\n                        \"summary\": \"总结：用户询问太阳系中类地行星的数量。\",\n                        \"prompt\": \"太阳系中有多少个类地行星？\",\n                        \"answer\": \"太阳系中有四个类地行星，分别是水星、金星、地球和火星。\",\n                        \"isStarred\": false,\n                        \"comment\": \"\",\n                        \"createdAt\": \"2025-07-29 00:44:12\"\n                    }\n                ],\n                \"children\": [\n                    {\n                        \"dialogId\": 25,\n                        \"parentId\": 24,\n                        \"conversations\": [\n                            {\n                                \"id\": 32,\n                                \"title\": \"和类地行星对应的是什么？\",\n                                \"summary\": \"用户在询问类地行星的对应类型。\",\n                                \"prompt\": \"和类地行星对应的是什么？\",\n                                \"answer\": \"类地行星对应的是岩石行星或固态行星，它们具有坚硬的岩石表面，通常较小且密度较高。它们与气态巨行星相对应。\",\n                                \"isStarred\": false,\n                                \"comment\": \"\",\n                                \"createdAt\": \"2025-07-29 00:47:17\"\n                            },\n                            {\n                                \"id\": 33,\n                                \"title\": \"他们有多大呢？\",\n                                \"summary\": \"这些行星的尺寸从小到大排列，分别是水星、火星、金星和地球。\",\n                                \"prompt\": \"他们有多大呢？\",\n                                \"answer\": \"他们的大小各不相同：水星是最小的，直径约为4,880公里；金星和地球的直径都约为12,760公里；火星的直径约为6,780公里。\",\n                                \"isStarred\": false,\n                                \"comment\": \"\",\n                                \"createdAt\": \"2025-07-29 00:47:50\"\n                            }\n                        ],\n                        \"children\": []\n                    },\n                    {\n                        \"dialogId\": 26,\n                        \"parentId\": 24,\n                        \"conversations\": [\n                            {\n                                \"id\": 30,\n                                \"title\": \"他们都有多少直径？\",\n                                \"summary\": \"用户询问各类地行星的直径。\",\n                                \"prompt\": \"他们都有多少直径？\",\n                                \"answer\": \"太阳系中的四个类地行星的直径分别为：水星约4,880公里，金星约12,104公里，地球约12,742公里，火星约6,779公里。\",\n                                \"isStarred\": false,\n                                \"comment\": \"\",\n                                \"createdAt\": \"2025-07-29 00:45:31\"\n                            },\n                            {\n                                \"id\": 31,\n                                \"title\": \"他们中哪几个有卫星呢？\",\n                                \"summary\": \"用户询问哪些行星有卫星，了解不同类地行星的卫星情况。\",\n                                \"prompt\": \"他们中哪几个有卫星呢？\",\n                                \"answer\": \"其中，地球、火星和金星都有卫星，水星没有卫星。\",\n                                \"isStarred\": false,\n                                \"comment\": \"\",\n                                \"createdAt\": \"2025-07-29 00:46:31\"\n                            },\n                            {\n                                \"id\": 34,\n                                \"title\": \"火星居然也有卫星？\",\n                                \"summary\": \"火星有两颗卫星，福波斯和德摩斯。\",\n                                \"prompt\": \"火星居然也有卫星？\",\n                                \"answer\": \"是的，火星有两颗卫星，分别是福波斯（Phobos）和德摩斯（Deimos），它们都是不规则的艾菲斯小行星。\",\n                                \"isStarred\": false,\n                                \"comment\": \"\",\n                                \"createdAt\": \"2025-07-29 00:49:01\"\n                            }\n                        ],\n                        \"children\": [\n                            {\n                                \"dialogId\": 27,\n                                \"parentId\": 26,\n                                \"conversations\": [\n                                    {\n                                        \"id\": 38,\n                                        \"title\": \"我们去过火星的卫星吗？包括探测器\",\n                                        \"summary\": \"探索火星和其卫星的探测情况\",\n                                        \"prompt\": \"我们去过火星的卫星吗？包括探测器\",\n                                        \"answer\": \"是的，科学家已经发射了多次探测器到火星的两颗卫星福波斯和德摩斯。例如，欧洲的“火星快车”以及美国的“火星勘测轨道器”等都部分进行了对这两颗卫星的研究。目前为止，还没有载人登陆火星卫星的任务。\",\n                                        \"isStarred\": false,\n                                        \"comment\": \"\",\n                                        \"createdAt\": \"2025-07-29 00:52:40\"\n                                    }\n                                ],\n                                \"children\": []\n                            },\n                            {\n                                \"dialogId\": 28,\n                                \"parentId\": 26,\n                                \"conversations\": [\n                                    {\n                                        \"id\": 35,\n                                        \"title\": \"他们和月球比谁更大？\",\n                                        \"summary\": \"用户想了解火星的卫星和月球的大小对比。\",\n                                        \"prompt\": \"他们和月球比谁更大？\",\n                                        \"answer\": \"火星上的卫星福波斯和德摩斯都比月球小，尤其是德摩斯，尺寸远远小于月球。福波斯虽然较大，但仍然不及月球。\",\n                                        \"isStarred\": false,\n                                        \"comment\": \"\",\n                                        \"createdAt\": \"2025-07-29 00:49:34\"\n                                    },\n                                    {\n                                        \"id\": 36,\n                                        \"title\": \"那如果他们较小的那一个撞到火星上会怎么样？\",\n                                        \"summary\": \"用户在探讨火星与其卫星比较及碰撞影响。\",\n                                        \"prompt\": \"那如果他们较小的那一个撞到火星上会怎么样？\",\n                                        \"answer\": \"如果较小的天体（如福波斯或德摩斯）撞到火星，可能会导致火灾、撞击坑形成或产生碎片，但不会对火星整体产生巨大影响，因为它们的质量较小。这类撞击在行星演化中较为常见。\",\n                                        \"isStarred\": false,\n                                        \"comment\": \"\",\n                                        \"createdAt\": \"2025-07-29 00:50:19\"\n                                    },\n                                    {\n                                        \"id\": 37,\n                                        \"title\": \"如果月球突然消失了，地球会怎么样？\",\n                                        \"summary\": \"用户关心月球消失后的地球影响\",\n                                        \"prompt\": \"如果月球突然消失了，地球会怎么样？\",\n                                        \"answer\": \"如果月球突然消失了，地球的 publest 轨道会发生变化，海洋的潮汐作用会大大减弱，导致海洋生态系统受到影响，长远来看可能会影响地球的自转稳定性和气候系统。此外，夜空不会再有月亮，天文学和文化方面也会受到影响。\",\n                                        \"isStarred\": false,\n                                        \"comment\": \"\",\n                                        \"createdAt\": \"2025-07-29 00:51:30\"\n                                    }\n                                ],\n                                \"children\": []\n                            }\n                        ]\n                    }\n                ]\n            }\n        ],\n        \"sessionId\": 10,\n        \"sessionInfo\": {\n            \"id\": 10,\n            \"createdAt\": \"2025-07-29T00:43:15.372255+08:00\",\n            \"updatedAt\": \"2025-07-29T00:44:12.9099+08:00\",\n            \"tittle\": \"太阳系中有多少个类地行星？\",\n            \"summary\": \"总结：用户询问太阳系中类地行星的数量。\",\n            \"categoryID\": 1,\n            \"rootDialogID\": 24\n        }\n    },\n    \"msg\": \"获取成功\"\n}"
 						}
 					]
 				},
@@ -667,7 +714,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}",
+							"raw": "{\n    \"content\":\"我们去过火星的卫星吗？包括探测器\",\n    \"sessionId\":10,\n    \"parentConversationId\":34\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -748,6 +795,68 @@
 							],
 							"cookie": [],
 							"body": "event:message\ndata:目前\n\nevent:message\ndata:关于\n\nevent:message\ndata:祖\n\nevent:message\ndata:孙\n\nevent:message\ndata:三\n\nevent:message\ndata:代\n\nevent:message\ndata:都是\n\nevent:message\ndata:明星\n\nevent:message\ndata:的\n\nevent:message\ndata:体育\n\nevent:message\ndata:家庭\n\nevent:message\ndata:案例\n\nevent:message\ndata:较\n\nevent:message\ndata:少\n\nevent:message\ndata:，没有\n\nevent:message\ndata:广\n\nevent:message\ndata:泛\n\nevent:message\ndata:的\n\nevent:message\ndata:知\n\nevent:message\ndata:名\n\nevent:message\ndata:例\n\nevent:message\ndata:子\n\nevent:message\ndata:。\n\nevent:message\ndata:部分\n\nevent:message\ndata:运动\n\nevent:message\ndata:家庭\n\nevent:message\ndata:可能\n\nevent:message\ndata:有\n\nevent:message\ndata:三\n\nevent:message\ndata:代\n\nevent:message\ndata:涉及\n\nevent:message\ndata:体育\n\nevent:message\ndata:，但\n\nevent:message\ndata:成为\n\nevent:message\ndata:明星\n\nevent:message\ndata:的\n\nevent:message\ndata:情况\n\nevent:message\ndata:非常\n\nevent:message\ndata:罕\n\nevent:message\ndata:见\n\nevent:message\ndata:。\n\n"
+						},
+						{
+							"name": "resp2",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"content\":\"我们去过火星的卫星吗？包括探测器\",\n    \"sessionId\":10,\n    \"parentConversationId\":34\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/chat",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"chat"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Cache-Control"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/event-stream"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 16:52:39 GMT"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "event:message\ndata:是\n\nevent:message\ndata:的\n\nevent:message\ndata:，\n\nevent:message\ndata:科学\n\nevent:message\ndata:家\n\nevent:message\ndata:已经\n\nevent:message\ndata:发\n\nevent:message\ndata:射\n\nevent:message\ndata:了\n\nevent:message\ndata:多\n\nevent:message\ndata:次\n\nevent:message\ndata:探\n\nevent:message\ndata:测\n\nevent:message\ndata:器\n\nevent:message\ndata:到\n\nevent:message\ndata:火\n\nevent:message\ndata:星\n\nevent:message\ndata:的\n\nevent:message\ndata:两\n\nevent:message\ndata:颗\n\nevent:message\ndata:卫\n\nevent:message\ndata:星\n\nevent:message\ndata:福\n\nevent:message\ndata:波\n\nevent:message\ndata:斯\n\nevent:message\ndata:和\n\nevent:message\ndata:德\n\nevent:message\ndata:摩\n\nevent:message\ndata:斯\n\nevent:message\ndata:。例如\n\nevent:message\ndata:，\n\nevent:message\ndata:欧洲\n\nevent:message\ndata:的\n\nevent:message\ndata:“\n\nevent:message\ndata:火\n\nevent:message\ndata:星\n\nevent:message\ndata:快\n\nevent:message\ndata:车\n\nevent:message\ndata:”\n\nevent:message\ndata:以及\n\nevent:message\ndata:美国\n\nevent:message\ndata:的\n\nevent:message\ndata:“\n\nevent:message\ndata:火\n\nevent:message\ndata:星\n\nevent:message\ndata:勘\n\nevent:message\ndata:测\n\nevent:message\ndata:轨\n\nevent:message\ndata:道\n\nevent:message\ndata:器\n\nevent:message\ndata:”等\n\nevent:message\ndata:都\n\nevent:message\ndata:部分\n\nevent:message\ndata:进行了\n\nevent:message\ndata:对\n\nevent:message\ndata:这\n\nevent:message\ndata:两\n\nevent:message\ndata:颗\n\nevent:message\ndata:卫\n\nevent:message\ndata:星\n\nevent:message\ndata:的\n\nevent:message\ndata:研究\n\nevent:message\ndata:。目前\n\nevent:message\ndata:为\n\nevent:message\ndata:止\n\nevent:message\ndata:，还\n\nevent:message\ndata:没有\n\nevent:message\ndata:载\n\nevent:message\ndata:人\n\nevent:message\ndata:登陆\n\nevent:message\ndata:火\n\nevent:message\ndata:星\n\nevent:message\ndata:卫\n\nevent:message\ndata:星\n\nevent:message\ndata:的\n\nevent:message\ndata:任务\n\nevent:message\ndata:。\n\n"
 						}
 					]
 				},
@@ -1136,6 +1245,78 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 0,\n    \"data\": {},\n    \"msg\": \"评论删除成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "获取祖先对话",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/dialog/conversations/36/ancestors",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"dialog",
+								"conversations",
+								"36",
+								"ancestors"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/36/ancestors",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"36",
+										"ancestors"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 17:48:08 GMT"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": [\n        {\n            \"id\": 29,\n            \"createdAt\": \"2025-07-29T00:44:12.907645+08:00\",\n            \"updatedAt\": \"2025-07-29T00:44:12.907645+08:00\",\n            \"prompt\": \"太阳系中有多少个类地行星？\",\n            \"answer\": \"太阳系中有四个类地行星，分别是水星、金星、地球和火星。\",\n            \"sessionID\": 10,\n            \"dialogID\": 24,\n            \"isStarred\": false,\n            \"comment\": \"\",\n            \"title\": \"太阳系中有多少个类地行星？\",\n            \"summary\": \"总结：用户询问太阳系中类地行星的数量。\"\n        },\n        {\n            \"id\": 30,\n            \"createdAt\": \"2025-07-29T00:45:31.251346+08:00\",\n            \"updatedAt\": \"2025-07-29T00:47:17.691633+08:00\",\n            \"prompt\": \"他们都有多少直径？\",\n            \"answer\": \"太阳系中的四个类地行星的直径分别为：水星约4,880公里，金星约12,104公里，地球约12,742公里，火星约6,779公里。\",\n            \"sessionID\": 10,\n            \"dialogID\": 26,\n            \"isStarred\": false,\n            \"comment\": \"\",\n            \"title\": \"他们都有多少直径？\",\n            \"summary\": \"用户询问各类地行星的直径。\"\n        },\n        {\n            \"id\": 31,\n            \"createdAt\": \"2025-07-29T00:46:31.366072+08:00\",\n            \"updatedAt\": \"2025-07-29T00:47:17.691633+08:00\",\n            \"prompt\": \"他们中哪几个有卫星呢？\",\n            \"answer\": \"其中，地球、火星和金星都有卫星，水星没有卫星。\",\n            \"sessionID\": 10,\n            \"dialogID\": 26,\n            \"isStarred\": false,\n            \"comment\": \"\",\n            \"title\": \"他们中哪几个有卫星呢？\",\n            \"summary\": \"用户询问哪些行星有卫星，了解不同类地行星的卫星情况。\"\n        },\n        {\n            \"id\": 34,\n            \"createdAt\": \"2025-07-29T00:49:01.467829+08:00\",\n            \"updatedAt\": \"2025-07-29T00:49:01.467829+08:00\",\n            \"prompt\": \"火星居然也有卫星？\",\n            \"answer\": \"是的，火星有两颗卫星，分别是福波斯（Phobos）和德摩斯（Deimos），它们都是不规则的艾菲斯小行星。\",\n            \"sessionID\": 10,\n            \"dialogID\": 26,\n            \"isStarred\": false,\n            \"comment\": \"\",\n            \"title\": \"火星居然也有卫星？\",\n            \"summary\": \"火星有两颗卫星，福波斯和德摩斯。\"\n        },\n        {\n            \"id\": 35,\n            \"createdAt\": \"2025-07-29T00:49:34.882749+08:00\",\n            \"updatedAt\": \"2025-07-29T00:52:40.230383+08:00\",\n            \"prompt\": \"他们和月球比谁更大？\",\n            \"answer\": \"火星上的卫星福波斯和德摩斯都比月球小，尤其是德摩斯，尺寸远远小于月球。福波斯虽然较大，但仍然不及月球。\",\n            \"sessionID\": 10,\n            \"dialogID\": 28,\n            \"isStarred\": false,\n            \"comment\": \"\",\n            \"title\": \"他们和月球比谁更大？\",\n            \"summary\": \"用户想了解火星的卫星和月球的大小对比。\"\n        }\n    ],\n    \"msg\": \"获取祖先对话成功\"\n}"
 						}
 					]
 				}

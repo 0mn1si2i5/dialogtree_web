@@ -46,5 +46,10 @@ export const dialogApi = {
   // 删除对话评论
   deleteComment(conversationId: number): Promise<ApiResponse> {
     return api.delete(`/dialog/conversations/${conversationId}`)
+  },
+
+  // 获取对话的祖先节点
+  getConversationAncestors(conversationId: number): Promise<ApiResponse> {
+    return api.get(`/api/dialog/conversations/${conversationId}/ancestors`)
   }
 } 

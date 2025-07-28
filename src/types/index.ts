@@ -61,11 +61,35 @@ export interface DialogTreeNode {
   y?: number
 }
 
-// 对话树数据结构
+// 后端返回的Dialog结构
+export interface DialogNode {
+  dialogId: number
+  parentId: number | null
+  conversations: Conversation[]
+  children: DialogNode[]
+}
+
+// 对话树数据结构 (后端API返回格式)
 export interface DialogTreeData {
   sessionId: number
   sessionInfo: Session
-  dialogTree: DialogTreeNode | null
+  dialogTree: DialogNode[] // 修正：后端返回的是数组
+}
+
+// 转换后的Conversation树节点 (用于D3.js可视化)
+export interface ConversationTreeNode {
+  id: number // conversation.id
+  type: 'user' | 'assistant'
+  title: string
+  summary: string
+  prompt?: string
+  answer?: string
+  conversationId: number
+  dialogId: number
+  isStarred: boolean
+  comment: string
+  createdAt: string
+  children: ConversationTreeNode[]
 }
 
 // 创建会话的请求参数

@@ -197,6 +197,20 @@ watch(currentSession, (newSession) => {
   }
 })
 
+// 监听对话历史变化，同步到聊天面板
+watch(() => dialogStore.currentChatHistory, (newHistory) => {
+  if (newHistory && newHistory.length > 0) {
+    messages.value = newHistory.map(item => ({
+      id: item.conversationId,
+      role: item.role,
+      content: item.content,
+      timestamp: item.timestamp,
+      isStarred: item.isStarred,
+      comment: item.comment
+    }))
+  }
+}, { immediate: true, deep: true })
+
 // 方法
 const sendMessage = async () => {
   if (!inputText.value.trim() || !currentSession.value || isStreaming.value) {
@@ -226,19 +240,9 @@ const sendMessage = async () => {
       sessionId: currentSession.value.id,
       parentConversationId: undefined // 暂时不支持从特定消息分叉
     })
-
-    // 当流式响应完成后，添加到消息列表
-    if (!isStreaming.value && streamingContent.value) {
-      const assistantMessage: ChatMessage = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: streamingContent.value,
-        timestamp: new Date().toISOString(),
-        isStarred: false
-      }
-      messages.value.push(assistantMessage)
-      dialogStore.clearStreaming()
-    }
+    
+    // SSE流式响应处理在dialogStore中已经完成
+    // 响应完成后会自动重新加载对话树，然后通过watch更新聊天历史
   } catch (error) {
     console.error('发送消息失败:', error)
     // 可以在这里显示错误提示
@@ -301,9 +305,8 @@ const continueFromHere = (messageId: number) => {
 }
 
 const loadChatHistory = async (sessionId: number) => {
-  // 这里应该从对话树数据中提取对话历史
-  // 暂时使用模拟数据
-  messages.value = []
+  // 加载对话树数据，对话历史会通过watch自动更新
+  await dialogStore.fetchDialogTree(sessionId)
 }
 
 const scrollToBottom = () => {

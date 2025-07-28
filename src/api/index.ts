@@ -24,7 +24,7 @@ const createApiInstance = (): AxiosInstance => {
 
   // 响应拦截器
   instance.interceptors.response.use(
-    (response: AxiosResponse<ApiResponse>) => {
+    (response) => {
       return response.data
     },
     (error) => {

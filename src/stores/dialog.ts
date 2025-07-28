@@ -1,50 +1,53 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DialogTreeData, DialogTreeNode, Conversation, CreateDialogRequest } from '@/types'
+import type { DialogTreeData, ConversationTreeNode, Conversation, CreateDialogRequest } from '@/types'
 import { dialogApi } from '@/api/dialog'
+import { transformDialogTreeToConversationTree, extractChatHistoryFromConversationTree, findConversationNodeById } from '@/utils/treeTransform'
 
 export const useDialogStore = defineStore('dialog', () => {
   // 状态
   const dialogTreeData = ref<DialogTreeData | null>(null)
   const selectedConversationId = ref<number | null>(null)
+  const ancestorConversationIds = ref<number[]>([])
   const isStreaming = ref(false)
   const streamingContent = ref('')
   const loading = ref(false)
 
   // 计算属性
-  const dialogTree = computed(() => dialogTreeData.value?.dialogTree || null)
+  const dialogTree = computed(() => dialogTreeData.value?.dialogTree || [])
   
   const sessionInfo = computed(() => dialogTreeData.value?.sessionInfo || null)
   
+  // 转换后的conversation树
+  const conversationTree = computed(() => {
+    if (!dialogTree.value || dialogTree.value.length === 0) return null
+    return transformDialogTreeToConversationTree(dialogTree.value)
+  })
+  
+  // 当前对话历史（用于ChatPanel）
+  const currentChatHistory = computed(() => {
+    return extractChatHistoryFromConversationTree(conversationTree.value)
+  })
+  
   const selectedConversation = computed(() => {
-    if (!selectedConversationId.value || !dialogTree.value) return null
+    if (!selectedConversationId.value || !conversationTree.value) return null
     
-    // 递归查找选中的对话
-    const findConversation = (node: DialogTreeNode): Conversation | null => {
-      if (node.conversationId === selectedConversationId.value) {
-        // 这里需要根据实际的数据结构来构造Conversation对象
-        return {
-          id: node.conversationId,
-          prompt: '',
-          answer: node.content || '',
-          title: node.title,
-          isStarred: false,
-          comment: '',
-          createdAt: new Date().toISOString()
-        }
-      }
-      
-      if (node.children) {
-        for (const child of node.children) {
-          const found = findConversation(child)
-          if (found) return found
-        }
-      }
-      
-      return null
+    // 使用新的工具函数查找conversation
+    const foundNode = findConversationNodeById(conversationTree.value, selectedConversationId.value)
+    if (!foundNode) return null
+    
+    // 构造Conversation对象
+    return {
+      id: foundNode.conversationId,
+      prompt: foundNode.prompt || '',
+      answer: foundNode.answer || '',
+      title: foundNode.title,
+      summary: foundNode.summary,
+      isStarred: foundNode.isStarred,
+      comment: foundNode.comment,
+      createdAt: foundNode.createdAt,
+      dialogId: foundNode.dialogId
     }
-    
-    return findConversation(dialogTree.value)
   })
 
   // 方法
@@ -136,8 +139,21 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
-  const setSelectedConversation = (conversationId: number | null): void => {
+  const setSelectedConversation = async (conversationId: number | null): Promise<void> => {
     selectedConversationId.value = conversationId
+    ancestorConversationIds.value = []
+    
+    if (conversationId) {
+      try {
+        const response = await dialogApi.getConversationAncestors(conversationId)
+        if (response.code === 0 && response.data) {
+          // 祖先节点数组包含从根到当前节点的完整路径
+          ancestorConversationIds.value = response.data.map((conv: any) => conv.id)
+        }
+      } catch (error) {
+        console.error('获取祖先节点失败:', error)
+      }
+    }
   }
 
   const clearStreaming = (): void => {
@@ -149,6 +165,7 @@ export const useDialogStore = defineStore('dialog', () => {
   const reset = (): void => {
     dialogTreeData.value = null
     selectedConversationId.value = null
+    ancestorConversationIds.value = []
     isStreaming.value = false
     streamingContent.value = ''
     loading.value = false
@@ -165,7 +182,10 @@ export const useDialogStore = defineStore('dialog', () => {
     // 计算属性
     dialogTree,
     sessionInfo,
+    conversationTree,
+    currentChatHistory,
     selectedConversation,
+    ancestorConversationIds,
     
     // 方法
     fetchDialogTree,
