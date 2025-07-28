@@ -1,0 +1,1145 @@
+{
+	"info": {
+		"_postman_id": "6063f651-999b-418f-b1ec-140711c9a1d2",
+		"name": "DialogTree",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44182070",
+		"_collection_link": "https://ranli-2622340.postman.co/workspace/Ran-Li's-Workspace~48d3ebf1-804a-4447-83fe-16be7d0f40ff/collection/44182070-6063f651-999b-418f-b1ec-140711c9a1d2?action=share&source=collection_link&creator=44182070"
+	},
+	"item": [
+		{
+			"name": "ai",
+			"item": [
+				{
+					"name": "请求session列表",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/sessions",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"sessions"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:34:26 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "412"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": [\n        {\n            \"id\": 5,\n            \"title\": \"nature2\",\n            \"summary\": \"\",\n            \"categoryID\": 1,\n            \"createdAt\": \"2025-07-27 21:52:50\",\n            \"updatedAt\": \"2025-07-27 21:52:50\"\n        },\n        {\n            \"id\": 3,\n            \"title\": \"ttt33\",\n            \"summary\": \"s3\",\n            \"categoryID\": 1,\n            \"createdAt\": \"2025-07-15 03:21:16\",\n            \"updatedAt\": \"2025-07-15 03:21:17\"\n        },\n        {\n            \"id\": 2,\n            \"title\": \"tit22\",\n            \"summary\": \"sum22\",\n            \"categoryID\": 0,\n            \"createdAt\": \"2025-07-15 03:01:08\",\n            \"updatedAt\": \"2025-07-15 03:01:09\"\n        }\n    ],\n    \"msg\": \"获取成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "创建新session",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"why can birds fly\",\n    \"categoryID\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/sessions",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"sessions"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"why can birds fly\",\n    \"categoryID\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:35:19 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "82"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"sessionId\": 7,\n        \"title\": \"why can birds fly\"\n    },\n    \"msg\": \"创建成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "请求某一个session的对话树",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/sessions/4/tree",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"sessions",
+								"4",
+								"tree"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "null",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions/5/tree",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions",
+										"5",
+										"tree"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:36:30 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "256"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"dialogTree\": null,\n        \"sessionId\": 5,\n        \"sessionInfo\": {\n            \"id\": 5,\n            \"createdAt\": \"2025-07-27T21:52:50.711389+08:00\",\n            \"updatedAt\": \"2025-07-27T21:52:50.711389+08:00\",\n            \"tittle\": \"nature2\",\n            \"summary\": \"\",\n            \"categoryID\": 1,\n            \"rootDialogID\": null\n        }\n    },\n    \"msg\": \"获取成功\"\n}"
+						},
+						{
+							"name": "not exist",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions/4/tree",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions",
+										"4",
+										"tree"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:36:55 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在\"\n}"
+						}
+					]
+				},
+				{
+					"name": "删除一个session",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/sessions/3",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"sessions",
+								"3"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "no exist",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions/4",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions",
+										"4"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:48:30 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在\"\n}"
+						},
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/sessions/3",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"sessions",
+										"3"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:49:43 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "41"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {},\n    \"msg\": \"删除成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "创建新 category",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"nature\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/categories",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"nature\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/categories",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"categories"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:30:31 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {},\n    \"msg\": \"分类创建成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "请求categories列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL_8080}}/api/categories",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseURL_8080}}/api/categories",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"categories"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:31:20 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "499"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"count\": 4,\n        \"list\": [\n            {\n                \"id\": 1,\n                \"createdAt\": \"0001-01-01T00:00:00Z\",\n                \"updatedAt\": \"0001-01-01T00:00:00Z\",\n                \"name\": \"测试\"\n            },\n            {\n                \"id\": 2,\n                \"createdAt\": \"2025-07-28T01:14:46.582788+08:00\",\n                \"updatedAt\": \"2025-07-28T01:14:46.582788+08:00\",\n                \"name\": \"test1\"\n            },\n            {\n                \"id\": 4,\n                \"createdAt\": \"2025-07-28T01:41:36.066066+08:00\",\n                \"updatedAt\": \"2025-07-28T01:41:36.066066+08:00\",\n                \"name\": \"\"\n            },\n            {\n                \"id\": 6,\n                \"createdAt\": \"2025-07-28T11:30:31.742357+08:00\",\n                \"updatedAt\": \"2025-07-28T11:30:31.742357+08:00\",\n                \"name\": \"nature\"\n            }\n        ]\n    },\n    \"msg\": \"Success\"\n}"
+						}
+					]
+				},
+				{
+					"name": "更新 category",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 4,\n    \"name\": \"movies\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/categories/update",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"update"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 4,\n    \"name\": \"movies\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/categories/update",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"categories",
+										"update"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:33:17 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "44"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"更新成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "删除 category",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/categories/4",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"4"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/categories/4",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"categories",
+										"4"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 03:34:08 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "44"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"删除成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "发起新对话（流式）",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/dialog/chat",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"dialog",
+								"chat"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "sse resp",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/chat",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"chat"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Cache-Control"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/event-stream"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 14:52:09 GMT"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "event:message\ndata:目前\n\nevent:message\ndata:关于\n\nevent:message\ndata:祖\n\nevent:message\ndata:孙\n\nevent:message\ndata:三\n\nevent:message\ndata:代\n\nevent:message\ndata:都是\n\nevent:message\ndata:明星\n\nevent:message\ndata:的\n\nevent:message\ndata:体育\n\nevent:message\ndata:家庭\n\nevent:message\ndata:案例\n\nevent:message\ndata:较\n\nevent:message\ndata:少\n\nevent:message\ndata:，没有\n\nevent:message\ndata:广\n\nevent:message\ndata:泛\n\nevent:message\ndata:的\n\nevent:message\ndata:知\n\nevent:message\ndata:名\n\nevent:message\ndata:例\n\nevent:message\ndata:子\n\nevent:message\ndata:。\n\nevent:message\ndata:部分\n\nevent:message\ndata:运动\n\nevent:message\ndata:家庭\n\nevent:message\ndata:可能\n\nevent:message\ndata:有\n\nevent:message\ndata:三\n\nevent:message\ndata:代\n\nevent:message\ndata:涉及\n\nevent:message\ndata:体育\n\nevent:message\ndata:，但\n\nevent:message\ndata:成为\n\nevent:message\ndata:明星\n\nevent:message\ndata:的\n\nevent:message\ndata:情况\n\nevent:message\ndata:非常\n\nevent:message\ndata:罕\n\nevent:message\ndata:见\n\nevent:message\ndata:。\n\n"
+						}
+					]
+				},
+				{
+					"name": "收藏某次问答",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/dialog/conversations/99/star",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"dialog",
+								"conversations",
+								"99",
+								"star"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "star resp",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}"
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/22/star",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"22",
+										"star"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:04:29 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "54"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"isStarred\": true\n    },\n    \"msg\": \"已标星\"\n}"
+						},
+						{
+							"name": "unstar resp",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}"
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/22/star",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"22",
+										"star"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:04:52 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "61"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {\n        \"isStarred\": false\n    },\n    \"msg\": \"已取消标星\"\n}"
+						},
+						{
+							"name": "no exist",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"content\":\"那有没有祖孙三代都是明星的呢？\",\n    \"sessionId\":6\n}"
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/99/star",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"99",
+										"star"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:05:06 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在\"\n}"
+						}
+					]
+				},
+				{
+					"name": "评论某次对话",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\":4002,\n    \"comment\":\"good\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/dialog/conversations/comment",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"dialog",
+								"conversations",
+								"comment"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\":22,\n    \"comment\":\"good\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/comment",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"comment"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:13:26 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {},\n    \"msg\": \"评论更新成功\"\n}"
+						},
+						{
+							"name": "no exist",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\":4002,\n    \"comment\":\"good\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/comment",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"comment"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:17:43 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "65"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在或评论未更改\"\n}"
+						}
+					]
+				},
+				{
+					"name": "删除对话的评论",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseURL_8080}}/api/dialog/conversations/21",
+							"host": [
+								"{{baseURL_8080}}"
+							],
+							"path": [
+								"api",
+								"dialog",
+								"conversations",
+								"21"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "no exist",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/44",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"44"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:18:41 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "65"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1001,\n    \"data\": {},\n    \"msg\": \"会话不存在或评论已为空\"\n}"
+						},
+						{
+							"name": "resp",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseURL_8080}}/api/dialog/conversations/21",
+									"host": [
+										"{{baseURL_8080}}"
+									],
+									"path": [
+										"api",
+										"dialog",
+										"conversations",
+										"21"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 28 Jul 2025 15:18:57 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 0,\n    \"data\": {},\n    \"msg\": \"评论删除成功\"\n}"
+						}
+					]
+				}
+			]
+		}
+	]
+}

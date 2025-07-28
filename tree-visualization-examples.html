@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话树可视化方案对比</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1890ff; }
+        .pros-cons { display: flex; gap: 15px; margin-top: 15px; }
+        .pros, .cons { flex: 1; padding: 10px; border-radius: 4px; }
+        .pros { background: #f6ffed; border: 1px solid #b7eb8f; }
+        .cons { background: #fff2f0; border: 1px solid #ffb8b0; }
+        .pros h4 { color: #52c41a; margin-top: 0; }
+        .cons h4 { color: #ff4d4f; margin-top: 0; }
+        
+        /* 方案A - D3.js 样式 */
+        .d3-tree { width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px; }
+        .node circle { fill: #fff; stroke: #1890ff; stroke-width: 2px; cursor: pointer; }
+        .node.active circle { fill: #1890ff; }
+        .node text { font-size: 12px; fill: #333; }
+        .link { fill: none; stroke: #ccc; stroke-width: 1.5px; }
+        
+        /* 方案B - 组件库样式 */
+        .tree-component { border: 1px solid #ddd; border-radius: 4px; padding: 15px; }
+        .tree-node { margin: 5px 0; padding: 8px 12px; border: 1px solid #e8e8e8; border-radius: 4px; cursor: pointer; }
+        .tree-node:hover { background: #f0f9ff; border-color: #1890ff; }
+        .tree-node.active { background: #e6f7ff; border-color: #1890ff; }
+        .tree-children { margin-left: 20px; position: relative; }
+        .tree-children::before { content: ''; position: absolute; left: -10px; top: 0; bottom: 0; width: 1px; background: #ddd; }
+        
+        /* 方案C - CSS样式 */
+        .css-tree { border: 1px solid #ddd; border-radius: 4px; padding: 15px; }
+        .css-tree ul { list-style: none; padding: 0; position: relative; }
+        .css-tree li { margin: 0; padding: 10px 0; position: relative; }
+        .css-tree li::before { content: ''; position: absolute; top: 0; left: -20px; width: 1px; height: 100%; background: #ddd; }
+        .css-tree li::after { content: ''; position: absolute; top: 20px; left: -20px; width: 20px; height: 1px; background: #ddd; }
+        .css-node { padding: 8px 12px; border: 1px solid #e8e8e8; border-radius: 4px; display: inline-block; cursor: pointer; }
+        .css-node:hover { background: #f0f9ff; border-color: #1890ff; }
+        .css-node.active { background: #e6f7ff; border-color: #1890ff; }
+    </style>
+</head>
+<body>
+    <h1>DialogTree 对话树可视化方案对比</h1>
+    
+    <!-- 方案A: D3.js 自定义实现 -->
+    <div class="container">
+        <div class="title">方案A: D3.js 自定义树状图 (推荐 ⭐⭐⭐⭐⭐)</div>
+        <div id="d3-tree" class="d3-tree"></div>
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ 优点</h4>
+                <ul>
+                    <li>视觉效果最佳，可自定义动画</li>
+                    <li>支持复杂的交互（缩放、拖拽、折叠）</li>
+                    <li>可以展示大量节点，性能优秀</li>
+                    <li>支持力导向布局，自动避免重叠</li>
+                    <li>可以添加丰富的视觉元素（连线样式、节点图标等）</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ 缺点</h4>
+                <ul>
+                    <li>开发复杂度较高</li>
+                    <li>需要学习D3.js</li>
+                    <li>调试相对困难</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 方案B: 组件库实现 -->
+    <div class="container">
+        <div class="title">方案B: Arco Design Tree 组件 (推荐 ⭐⭐⭐)</div>
+        <div class="tree-component">
+            <div class="tree-node active">💬 初始对话: 你好，请帮我解释什么是人工智能？</div>
+            <div class="tree-children">
+                <div class="tree-node">💬 分支1: 能详细说说机器学习吗？</div>
+                <div class="tree-children">
+                    <div class="tree-node">💬 子分支: 深度学习和机器学习有什么区别？</div>
+                </div>
+                <div class="tree-node">💬 分支2: AI在日常生活中有哪些应用？</div>
+                <div class="tree-children">
+                    <div class="tree-node">💬 子分支: 智能手机中的AI功能有哪些？</div>
+                    <div class="tree-node">💬 子分支: AI助手是如何工作的？</div>
+                </div>
+            </div>
+        </div>
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ 优点</h4>
+                <ul>
+                    <li>开发速度快，直接使用现成组件</li>
+                    <li>与Arco Design风格统一</li>
+                    <li>基础功能稳定可靠</li>
+                    <li>维护成本低</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ 缺点</h4>
+                <ul>
+                    <li>视觉效果较普通</li>
+                    <li>定制能力有限</li>
+                    <li>大量节点时性能一般</li>
+                    <li>无法实现复杂的布局算法</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 方案C: 纯CSS实现 -->
+    <div class="container">
+        <div class="title">方案C: 纯CSS+HTML实现 (推荐 ⭐⭐)</div>
+        <div class="css-tree">
+            <ul>
+                <li>
+                    <div class="css-node active">💬 初始对话: 你好，请帮我解释什么是人工智能？</div>
+                    <ul>
+                        <li>
+                            <div class="css-node">💬 分支1: 能详细说说机器学习吗？</div>
+                            <ul>
+                                <li><div class="css-node">💬 深度学习和机器学习有什么区别？</div></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <div class="css-node">💬 分支2: AI在日常生活中有哪些应用？</div>
+                            <ul>
+                                <li><div class="css-node">💬 智能手机中的AI功能有哪些？</div></li>
+                                <li><div class="css-node">💬 AI助手是如何工作的？</div></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ 优点</h4>
+                <ul>
+                    <li>实现简单，无需额外依赖</li>
+                    <li>维护成本最低</li>
+                    <li>响应速度快</li>
+                    <li>容易理解和修改</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ 缺点</h4>
+                <ul>
+                    <li>视觉效果最基础</li>
+                    <li>无法处理大量节点</li>
+                    <li>交互能力有限</li>
+                    <li>布局灵活性差</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // D3.js 树状图示例
+        const data = {
+            name: "💬 初始对话: 你好，请帮我解释什么是人工智能？",
+            children: [
+                {
+                    name: "💬 分支1: 能详细说说机器学习吗？",
+                    children: [
+                        { name: "💬 深度学习和机器学习有什么区别？" }
+                    ]
+                },
+                {
+                    name: "💬 分支2: AI在日常生活中有哪些应用？",
+                    children: [
+                        { name: "💬 智能手机中的AI功能有哪些？" },
+                        { name: "💬 AI助手是如何工作的？" }
+                    ]
+                }
+            ]
+        };
+
+        const width = 800;
+        const height = 400;
+
+        const svg = d3.select("#d3-tree")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g").attr("transform", "translate(50,50)");
+
+        const tree = d3.tree().size([height - 100, width - 200]);
+        const root = d3.hierarchy(data);
+        tree(root);
+
+        // 绘制连线
+        g.selectAll('.link')
+            .data(root.links())
+            .enter().append('path')
+            .attr('class', 'link')
+            .attr('d', d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x));
+
+        // 绘制节点
+        const node = g.selectAll('.node')
+            .data(root.descendants())
+            .enter().append('g')
+            .attr('class', 'node')
+            .attr('transform', d => `translate(${d.y},${d.x})`)
+            .on('click', function(event, d) {
+                d3.selectAll('.node').classed('active', false);
+                d3.select(this).classed('active', true);
+            });
+
+        node.append('circle').attr('r', 6);
+        
+        node.append('text')
+            .attr('dy', 3)
+            .attr('x', d => d.children ? -8 : 8)
+            .style('text-anchor', d => d.children ? 'end' : 'start')
+            .text(d => d.data.name.length > 20 ? d.data.name.substring(0, 20) + '...' : d.data.name);
+
+        // 设置第一个节点为活跃状态
+        g.select('.node').classed('active', true);
+
+        // 为其他方案添加点击事件
+        document.querySelectorAll('.tree-node, .css-node').forEach(node => {
+            node.addEventListener('click', function() {
+                // 移除同一容器内的其他active状态
+                const container = this.closest('.tree-component, .css-tree');
+                container.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
