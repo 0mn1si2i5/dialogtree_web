@@ -1,39 +1,37 @@
 <template>
-  <div class="chat-panel">
+  <div class="chat-panel" :data-mode="chatPanelMode">
     <!-- 顶部工具栏 -->
     <div class="chat-header">
       <div class="header-title">
-        <span>对话</span>
+        <span v-if="currentSession">{{ currentSession.title }}</span>
+        <span v-else>选择会话开始对话</span>
       </div>
+      
       <div class="header-actions">
         <a-button 
           type="text" 
-          size="small"
-          @click="clearChat"
-          :disabled="!hasMessages"
+          size="small" 
+          @click="toggleChatPanelMode"
+          :title="getChatPanelButtonTooltip()"
         >
-          清空
+          <template #icon>
+            <icon-fullscreen v-if="chatPanelMode === 'normal'" />
+            <icon-fullscreen-exit v-else-if="chatPanelMode === 'expanded'" />
+            <icon-right v-else />
+          </template>
         </a-button>
       </div>
     </div>
 
-    <!-- 对话消息区域 -->
+    <!-- 聊天消息区域 -->
     <div class="chat-messages" ref="messagesRef">
-      <div v-if="!hasMessages" class="empty-chat">
-        <div class="empty-icon">
-          <icon-message />
-        </div>
-        <div class="empty-text">开始一段新的对话</div>
-        <div class="empty-hint">选择左侧的会话或创建新会话开始聊天</div>
-      </div>
-      
-      <div v-else class="message-list">
+      <div class="message-list">
         <!-- 历史消息 -->
         <div 
-          v-for="message in messages" 
+          v-for="message in currentChatHistory"
           :key="message.id"
           class="message-item"
-          :class="{ 'user-message': message.role === 'user', 'assistant-message': message.role === 'assistant' }"
+          :class="`${message.role}-message`"
         >
           <div class="message-avatar">
             <div v-if="message.role === 'user'" class="user-avatar">
@@ -43,8 +41,11 @@
               <icon-robot />
             </div>
           </div>
+          
           <div class="message-content">
-            <div class="message-text">{{ message.content }}</div>
+            <div class="message-text">
+              {{ message.content }}
+            </div>
             <div class="message-actions">
               <div class="message-time">
                 {{ formatTime(message.timestamp) }}
@@ -53,26 +54,26 @@
                 <a-button 
                   type="text" 
                   size="mini"
-                  @click="starMessage(message.id)"
+                  @click="toggleStar(message.conversationId!)"
+                  :class="{ starred: message.isStarred }"
                 >
                   <template #icon>
-                    <icon-star :style="{ color: message.isStarred ? '#faad14' : '' }" />
+                    <icon-star-fill v-if="message.isStarred" />
+                    <icon-star v-else />
                   </template>
                 </a-button>
-                <a-button 
-                  type="text" 
-                  size="mini"
-                  @click="showCommentDialog(message)"
-                >
+                
+                <a-button type="text" size="mini" @click="showCommentModal(message)">
                   <template #icon>
                     <icon-message />
                   </template>
                 </a-button>
+                
                 <a-button 
+                  v-if="message.role === 'assistant'"
                   type="text" 
                   size="mini"
-                  @click="continueFromHere(message.id)"
-                  v-if="message.role === 'assistant'"
+                  @click="continueFromMessage(message)"
                 >
                   <template #icon>
                     <icon-branch />
@@ -85,7 +86,10 @@
         </div>
 
         <!-- 流式输出消息 -->
-        <div v-if="isStreaming" class="message-item assistant-message streaming">
+        <div 
+          v-if="isStreaming && streamingContent"
+          class="message-item assistant-message streaming"
+        >
           <div class="message-avatar">
             <div class="assistant-avatar">
               <icon-robot />
@@ -98,222 +102,127 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- 底部输入区域 -->
-    <div class="chat-input">
-      <div class="input-container">
-        <a-textarea
-          v-model="inputText"
-          placeholder="输入您的问题..."
-          :auto-size="{ minRows: 1, maxRows: 4 }"
-          :disabled="isStreaming"
-          @keydown.enter.exact.prevent="sendMessage"
-          @keydown.enter.shift.exact="addNewLine"
-        />
-        <div class="input-actions">
-          <a-button 
-            type="primary"
-            :loading="isStreaming"
-            :disabled="!inputText.trim() || isStreaming"
-            @click="sendMessage"
-          >
-            <template #icon>
-              <icon-send />
-            </template>
-            发送
-          </a-button>
+        <!-- 空状态 -->
+        <div v-if="currentChatHistory.length === 0 && !isStreaming" class="empty-chat">
+          <a-empty description="点击对话树中的节点查看对话历史" />
         </div>
       </div>
     </div>
 
-    <!-- 评论对话框 -->
+    <!-- 输入区域 -->
+    <div class="chat-input" v-if="currentSession">
+      <div class="input-container">
+        <a-textarea
+          v-model="inputMessage"
+          placeholder="输入您的问题..."
+          :auto-size="{ minRows: 1, maxRows: 4 }"
+          :disabled="isStreaming"
+          @keydown.ctrl.enter="sendMessage"
+          @keydown.meta.enter="sendMessage"
+        />
+        <a-button 
+          type="primary" 
+          :loading="isStreaming"
+          :disabled="!inputMessage.trim() || isStreaming"
+          @click="sendMessage"
+        >
+          <template #icon>
+            <icon-send />
+          </template>
+          发送
+        </a-button>
+      </div>
+      
+      <div class="input-tip">
+        <span>Ctrl + Enter 快速发送</span>
+        <span v-if="selectedConversationId">
+          将从选中节点继续对话
+        </span>
+      </div>
+    </div>
+
+    <!-- 评论模态框 -->
     <a-modal
-      v-model:visible="commentModalVisible"
+      v-model:visible="showCommentModalVisible"
       title="添加评论"
-      @ok="saveComment"
-      @cancel="cancelComment"
+      @ok="handleSaveComment"
+      @cancel="handleCancelComment"
     >
-      <a-textarea
-        v-model="commentText"
-        placeholder="输入您的评论..."
-        :auto-size="{ minRows: 3, maxRows: 6 }"
-      />
+      <a-form :model="commentForm" layout="vertical">
+        <a-form-item label="评论内容">
+          <a-textarea
+            v-model="commentForm.comment"
+            placeholder="请输入评论..."
+            :auto-size="{ minRows: 3, maxRows: 6 }"
+            @keydown.ctrl.enter="handleSaveComment"
+          />
+        </a-form-item>
+      </a-form>
+      
+      <template #footer>
+        <a-button @click="handleCancelComment">取消</a-button>
+        <a-button 
+          type="primary" 
+          @click="handleSaveComment"
+          :loading="commentLoading"
+        >
+          保存
+        </a-button>
+      </template>
     </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { Message } from '@arco-design/web-vue'
+import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
 import { 
-  IconMessage, 
   IconUser, 
   IconRobot, 
   IconStar, 
+  IconStarFill, 
+  IconMessage, 
   IconBranch, 
-  IconSend 
+  IconSend,
+  IconFullscreen,
+  IconFullscreenExit,
+  IconRight
 } from '@arco-design/web-vue/es/icon'
-import { useSessionStore } from '@/stores/session'
-import { useDialogStore } from '@/stores/dialog'
-import { formatTime } from '@/utils/format'
+import dayjs from 'dayjs'
+import type { ChatMessage } from '@/types'
 
-// Store
+// 使用stores
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
+const layoutStore = useLayoutStore()
 
-// 响应式数据
-const inputText = ref('')
-const commentModalVisible = ref(false)
-const commentText = ref('')
-const currentCommentMessage = ref<any>(null)
+// 响应式状态
+const inputMessage = ref('')
 const messagesRef = ref<HTMLElement>()
-
-// 模拟消息数据结构
-interface ChatMessage {
-  id: number
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: string
-  isStarred: boolean
-  comment?: string
-}
-
-const messages = ref<ChatMessage[]>([])
+const showCommentModalVisible = ref(false)
+const commentLoading = ref(false)
+const commentForm = ref({
+  conversationId: null as number | null,
+  comment: '',
+})
 
 // 计算属性
 const currentSession = computed(() => sessionStore.currentSession)
+const currentChatHistory = computed(() => dialogStore.currentChatHistory)
+const selectedConversationId = computed(() => dialogStore.selectedConversationId)
 const isStreaming = computed(() => dialogStore.isStreaming)
 const streamingContent = computed(() => dialogStore.streamingContent)
-const hasMessages = computed(() => messages.value.length > 0 || isStreaming.value)
+const streamingError = computed(() => dialogStore.streamingError)
+const chatPanelMode = computed(() => layoutStore.chatPanelMode)
 
-// 监听当前会话变化
-watch(currentSession, (newSession) => {
-  if (newSession) {
-    // 加载会话的对话历史
-    loadChatHistory(newSession.id)
-  } else {
-    messages.value = []
-  }
-})
-
-// 监听对话历史变化，同步到聊天面板
-watch(() => dialogStore.currentChatHistory, (newHistory) => {
-  if (newHistory && newHistory.length > 0) {
-    messages.value = newHistory.map(item => ({
-      id: item.conversationId,
-      role: item.role,
-      content: item.content,
-      timestamp: item.timestamp,
-      isStarred: item.isStarred,
-      comment: item.comment
-    }))
-  }
-}, { immediate: true, deep: true })
-
-// 方法
-const sendMessage = async () => {
-  if (!inputText.value.trim() || !currentSession.value || isStreaming.value) {
-    return
-  }
-
-  const userMessage: ChatMessage = {
-    id: Date.now(),
-    role: 'user',
-    content: inputText.value.trim(),
-    timestamp: new Date().toISOString(),
-    isStarred: false
-  }
-
-  messages.value.push(userMessage)
-  const messageContent = inputText.value.trim()
-  inputText.value = ''
-
-  // 滚动到底部
-  await nextTick()
-  scrollToBottom()
-
-  try {
-    // 发送消息到后端
-    await dialogStore.createDialog({
-      content: messageContent,
-      sessionId: currentSession.value.id,
-      parentConversationId: undefined // 暂时不支持从特定消息分叉
-    })
-    
-    // SSE流式响应处理在dialogStore中已经完成
-    // 响应完成后会自动重新加载对话树，然后通过watch更新聊天历史
-  } catch (error) {
-    console.error('发送消息失败:', error)
-    // 可以在这里显示错误提示
-  }
-}
-
-const addNewLine = () => {
-  inputText.value += '\n'
-}
-
-const clearChat = () => {
-  messages.value = []
-  dialogStore.clearStreaming()
-}
-
-const starMessage = async (messageId: number) => {
-  const message = messages.value.find(m => m.id === messageId)
-  if (message) {
-    try {
-      // 这里需要对应的conversationId，暂时模拟
-      // const isStarred = await dialogStore.starConversation(conversationId)
-      message.isStarred = !message.isStarred
-    } catch (error) {
-      console.error('标星操作失败:', error)
-    }
-  }
-}
-
-const showCommentDialog = (message: ChatMessage) => {
-  currentCommentMessage.value = message
-  commentText.value = message.comment || ''
-  commentModalVisible.value = true
-}
-
-const saveComment = async () => {
-  if (currentCommentMessage.value) {
-    try {
-      // 这里需要对应的conversationId，暂时模拟
-      // await dialogStore.updateComment(conversationId, commentText.value)
-      currentCommentMessage.value.comment = commentText.value
-      commentModalVisible.value = false
-      currentCommentMessage.value = null
-      commentText.value = ''
-    } catch (error) {
-      console.error('保存评论失败:', error)
-    }
-  }
-}
-
-const cancelComment = () => {
-  commentModalVisible.value = false
-  currentCommentMessage.value = null
-  commentText.value = ''
-}
-
-const continueFromHere = (messageId: number) => {
-  // 实现从此消息开始分叉对话的逻辑
-  console.log('从此处分叉对话:', messageId)
-  // 这里需要实现分叉逻辑
-}
-
-const loadChatHistory = async (sessionId: number) => {
-  // 加载对话树数据，对话历史会通过watch自动更新
-  await dialogStore.fetchDialogTree(sessionId)
-}
-
-const scrollToBottom = () => {
-  if (messagesRef.value) {
-    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-  }
-}
+// 监听聊天历史变化，自动滚动到底部
+watch(currentChatHistory, () => {
+  nextTick(() => {
+    scrollToBottom()
+  })
+}, { deep: true })
 
 // 监听流式内容变化，自动滚动
 watch(streamingContent, () => {
@@ -321,136 +230,238 @@ watch(streamingContent, () => {
     scrollToBottom()
   })
 })
+
+// 监听流式错误
+watch(streamingError, (error) => {
+  if (error) {
+    Message.error(`对话失败: ${error}`)
+    dialogStore.clearStreamingState()
+  }
+})
+
+// ===== 方法 =====
+
+// 格式化时间
+function formatTime(timeStr: string): string {
+  return dayjs(timeStr).format('MM-DD HH:mm')
+}
+
+// 发送消息
+async function sendMessage() {
+  if (!inputMessage.value.trim() || !currentSession.value || isStreaming.value) {
+    return
+  }
+
+  const content = inputMessage.value.trim()
+  inputMessage.value = ''
+
+  try {
+    const request = {
+      content,
+      sessionId: currentSession.value.id,
+      parentConversationId: selectedConversationId.value || undefined,
+    }
+
+    await dialogStore.createDialog(request)
+    Message.success('对话创建成功')
+  } catch (error) {
+    console.error('Failed to create dialog:', error)
+    Message.error('发送失败，请重试')
+  }
+}
+
+// 标星/取消标星
+async function toggleStar(conversationId: number) {
+  try {
+    const result = await dialogStore.toggleStar(conversationId)
+    const action = result.isStarred ? '已标星' : '已取消标星'
+    Message.success(action)
+  } catch (error) {
+    Message.error('操作失败')
+  }
+}
+
+// 显示评论模态框
+function showCommentModal(message: ChatMessage) {
+  if (!message.conversationId) return
+  
+  commentForm.value = {
+    conversationId: message.conversationId,
+    comment: message.comment || '',
+  }
+  showCommentModalVisible.value = true
+}
+
+// 保存评论
+async function handleSaveComment() {
+  if (!commentForm.value.conversationId) return
+
+  try {
+    commentLoading.value = true
+    await dialogStore.updateComment(
+      commentForm.value.conversationId,
+      commentForm.value.comment.trim()
+    )
+    Message.success('评论保存成功')
+    showCommentModalVisible.value = false
+  } catch (error) {
+    Message.error('保存失败')
+  } finally {
+    commentLoading.value = false
+  }
+}
+
+// 取消评论
+function handleCancelComment() {
+  showCommentModalVisible.value = false
+  commentForm.value = {
+    conversationId: null,
+    comment: '',
+  }
+}
+
+// 从消息继续对话
+function continueFromMessage(message: ChatMessage) {
+  if (message.conversationId) {
+    dialogStore.setSelectedConversation(message.conversationId)
+    Message.info('已选择此节点作为分叉起点，现在可以输入新问题')
+  }
+}
+
+// 滚动到底部
+function scrollToBottom() {
+  if (messagesRef.value) {
+    const element = messagesRef.value
+    element.scrollTop = element.scrollHeight
+  }
+}
+
+// 切换聊天面板模式
+function toggleChatPanelMode() {
+  layoutStore.toggleChatPanelMode()
+}
+
+// 获取面板按钮提示
+function getChatPanelButtonTooltip() {
+  return layoutStore.getChatPanelButtonTooltip()
+}
 </script>
 
 <style lang="less" scoped>
 .chat-panel {
-  height: 100%;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  background-color: #fff;
 }
 
 .chat-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color-light);
-  background: var(--bg-primary);
+  border-bottom: 1px solid #e5e5e5;
+  background-color: #fafafa;
+  flex-shrink: 0;
 }
 
 .header-title {
-  font-size: 16px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-}
-
-.empty-chat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: var(--text-tertiary);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 18px;
-  margin-bottom: 8px;
-  color: var(--text-secondary);
-}
-
-.empty-hint {
-  font-size: 14px;
+  padding: 16px 0;
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 0 16px;
 }
 
 .message-item {
   display: flex;
-  align-items: flex-start;
   gap: 12px;
   
   &.user-message {
     flex-direction: row-reverse;
     
     .message-content {
-      background: var(--primary-color);
+      background-color: #1890ff;
       color: white;
-      margin-right: 40px;
+      max-width: 70%;
+      
+      .message-text {
+        word-wrap: break-word;
+      }
     }
   }
   
   &.assistant-message {
     .message-content {
-      background: var(--bg-tertiary);
-      margin-left: 40px;
+      background-color: #f5f5f5;
+      color: #333;
+      max-width: 70%;
+      
+      .message-text {
+        word-wrap: break-word;
+      }
     }
-  }
-  
-  &.streaming {
-    .message-content {
-      border: 1px dashed var(--border-color);
+    
+    &.streaming {
+      .cursor {
+        animation: blink 1s infinite;
+      }
     }
   }
 }
 
 .message-avatar {
+  flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-avatar {
-  background: var(--primary-color);
-  color: white;
-}
-
-.assistant-avatar {
-  background: var(--success-color);
-  color: white;
+  
+  .user-avatar,
+  .assistant-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  
+  .user-avatar {
+    background-color: #1890ff;
+    color: white;
+  }
+  
+  .assistant-avatar {
+    background-color: #52c41a;
+    color: white;
+  }
 }
 
 .message-content {
-  flex: 1;
-  padding: 12px 16px;
   border-radius: 12px;
+  padding: 12px 16px;
   position: relative;
+  min-width: 0;
 }
 
 .message-text {
   line-height: 1.6;
-  word-wrap: break-word;
-}
-
-.cursor {
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  margin-bottom: 8px;
 }
 
 .message-actions {
@@ -458,49 +469,91 @@ watch(streamingContent, () => {
   justify-content: space-between;
   align-items: center;
   margin-top: 8px;
-  opacity: 0;
+  opacity: 0.7;
   transition: opacity 0.2s;
-}
-
-.message-item:hover .message-actions {
-  opacity: 1;
+  
+  .message-item:hover & {
+    opacity: 1;
+  }
 }
 
 .message-time {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: #999;
 }
 
 .action-buttons {
   display: flex;
   gap: 4px;
+  
+  .arco-btn.starred {
+    color: #fa8c16;
+  }
 }
 
 .chat-input {
+  border-top: 1px solid #e5e5e5;
   padding: 16px;
-  border-top: 1px solid var(--border-color-light);
-  background: var(--bg-primary);
+  flex-shrink: 0;
 }
 
 .input-container {
-  position: relative;
-}
-
-.input-actions {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-}
-
-// 重写 textarea 样式
-:deep(.arco-textarea) {
-  padding-right: 80px;
-  resize: none;
-  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
   
-  &:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  .arco-textarea-wrapper {
+    flex: 1;
   }
 }
-</style> 
+
+.input-tip {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.empty-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+}
+
+// 光标闪烁动画
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+// 展开模式样式调整
+.chat-panel[data-mode="expanded"] {
+  .chat-messages {
+    .message-list {
+      max-width: calc(100vw - 200px);
+      margin: 0 auto;
+    }
+  }
+}
+
+// 隐藏模式样式
+.chat-panel[data-mode="hidden"] {
+  .chat-header {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    padding: 16px 8px;
+    
+    .header-title {
+      display: none;
+    }
+  }
+  
+  .chat-messages,
+  .chat-input {
+    display: none;
+  }
+}
+</style>

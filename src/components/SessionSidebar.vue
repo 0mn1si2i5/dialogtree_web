@@ -1,416 +1,522 @@
 <template>
   <div class="session-sidebar">
-    <!-- 标题 -->
+    <!-- 顶部工具栏 -->
     <div class="sidebar-header">
-      <h2 class="title">DialogTree</h2>
+      <a-tabs v-model:active-key="activeTab" size="small">
+        <a-tab-pane key="sessions" title="会话列表" />
+        <a-tab-pane key="categories" title="分类管理" />
+      </a-tabs>
+      
+      <div class="header-actions">
+        <a-button 
+          type="text" 
+          size="small" 
+          @click="toggleSidebar"
+          :title="'隐藏侧边栏'"
+        >
+          <template #icon>
+            <icon-left />
+          </template>
+        </a-button>
+      </div>
     </div>
 
-    <!-- 标签页 -->
-    <div class="sidebar-tabs">
-      <a-tabs v-model:active-key="activeTab" size="small">
-        <!-- 会话列表标签页 -->
-        <a-tab-pane key="sessions" title="会话列表">
-          <!-- 新建会话按钮 -->
-          <div class="tab-header">
-            <a-button 
-              type="primary" 
-              size="small" 
-              @click="createNewSession"
-              :loading="loading"
-              block
-            >
-              <template #icon>
-                <icon-plus />
-              </template>
-              新建对话
-            </a-button>
-          </div>
-
-          <!-- 分类筛选 -->
-          <div class="category-filter">
-            <a-select 
-              v-model="selectedCategoryId"
-              placeholder="选择分类"
-              size="small"
-              style="width: 100%"
-              @change="onCategoryChange"
-              allow-clear
-            >
-              <a-option :value="null">全部分类</a-option>
-              <a-option 
-                v-for="category in categories" 
-                :key="category.id"
-                :value="category.id"
-              >
-                {{ category.name }}
-              </a-option>
-            </a-select>
-          </div>
-
-          <!-- 会话列表 -->
-          <div class="session-list">
-            <div v-if="filteredSessions.length === 0" class="empty-state">
-              <a-empty description="暂无会话">
-                <a-button size="small" @click="createNewSession">
-                  创建第一个对话
-                </a-button>
-              </a-empty>
-            </div>
-
-            <div
-              v-for="session in filteredSessions"
-              :key="session.id"
-              class="session-item"
-              :class="{ active: isCurrentSession(session.id) }"
-              @click="selectSession(session.id)"
-            >
-              <div class="session-content">
-                <div class="session-title">{{ truncateText(session.title || '未命名对话', 20) }}</div>
-                <div class="session-summary">{{ truncateText(session.summary || '暂无摘要', 30) }}</div>
-                <div class="session-meta">
-                  <span class="session-time">{{ formatRelativeTime(session.createdAt) }}</span>
-                </div>
-              </div>
-              
-              <div class="session-actions" @click.stop>
-                <a-dropdown trigger="click">
-                  <a-button type="text" size="mini">
-                    <template #icon>
-                      <icon-more />
-                    </template>
-                  </a-button>
-                  <template #content>
-                    <a-doption @click="editSession(session)">
-                      <template #icon>
-                        <icon-edit />
-                      </template>
-                      重命名
-                    </a-doption>
-                    <a-doption @click="moveToCategory(session)">
-                      <template #icon>
-                        <icon-folder />
-                      </template>
-                      移动分类
-                    </a-doption>
-                    <a-doption @click="deleteSession(session)" class="danger">
-                      <template #icon>
-                        <icon-delete />
-                      </template>
-                      删除
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </div>
-            </div>
-          </div>
-        </a-tab-pane>
+    <!-- 会话列表标签页 -->
+    <div v-if="activeTab === 'sessions'" class="tab-content">
+      <!-- 分类筛选 -->
+      <div class="category-filter">
+        <a-select
+          v-model="selectedCategoryId"
+          placeholder="选择分类"
+          allow-clear
+          @change="handleCategoryChange"
+          @clear="handleCategoryClear"
+        >
+          <a-option value="all">全部分类</a-option>
+          <a-option 
+            v-for="category in categories"
+            :key="category.id"
+            :value="category.id"
+          >
+            {{ category.name }}
+          </a-option>
+        </a-select>
         
-        <!-- 分类管理标签页 -->
-        <a-tab-pane key="categories" title="分类管理">
-          <!-- 新建分类按钮 -->
-          <div class="tab-header">
-            <a-button 
-              type="primary" 
-              size="small" 
-              @click="createNewCategory"
-              block
-            >
-              <template #icon>
-                <icon-plus />
-              </template>
-              新建分类
-            </a-button>
-          </div>
+        <a-button 
+          type="primary" 
+          size="small" 
+          @click="showCreateSessionModal = true"
+        >
+          新建会话
+        </a-button>
+      </div>
 
-          <!-- 分类列表 -->
-          <div class="category-list">
-            <div v-if="categories.length === 0" class="empty-state">
-              <a-empty description="暂无分类">
-                <a-button size="small" @click="createNewCategory">
-                  创建第一个分类
-                </a-button>
-              </a-empty>
+      <!-- 会话列表 -->
+      <div class="session-list">
+        <a-spin :loading="sessionStore.loading">
+          <div 
+            v-for="session in filteredSessions"
+            :key="session.id"
+            class="session-item"
+            :class="{ active: session.id === currentSessionId }"
+            @click="selectSession(session.id)"
+          >
+            <div class="session-info">
+              <div class="session-title" :title="session.title">
+                {{ session.title }}
+              </div>
+              <div class="session-meta">
+                <span class="session-time">
+                  {{ formatTime(session.updatedAt) }}
+                </span>
+                <span v-if="session.summary" class="session-summary">
+                  {{ session.summary }}
+                </span>
+              </div>
             </div>
+            
+            <a-dropdown trigger="click" @select="(key) => handleSessionAction(key, session)">
+              <a-button type="text" size="mini" @click.stop>
+                <template #icon>
+                  <icon-more />
+                </template>
+              </a-button>
+              <template #content>
+                <a-doption value="rename">重命名</a-doption>
+                <a-doption value="move">移动到分类</a-doption>
+                <a-doption value="delete" class="danger">删除</a-doption>
+              </template>
+            </a-dropdown>
+          </div>
+          
+          <a-empty 
+            v-if="filteredSessions.length === 0 && !sessionStore.loading"
+            description="暂无会话"
+          />
+        </a-spin>
+      </div>
+    </div>
 
-            <div
+    <!-- 分类管理标签页 -->
+    <div v-if="activeTab === 'categories'" class="tab-content">
+      <div class="category-actions">
+        <a-button 
+          type="primary" 
+          size="small" 
+          @click="showCreateCategoryModal = true"
+        >
+          新建分类
+        </a-button>
+      </div>
+
+      <div class="category-list">
+        <a-spin :loading="sessionStore.loading">
+          <div 
+            v-for="category in categories"
+            :key="category.id"
+            class="category-item"
+          >
+            <div class="category-info">
+              <div class="category-name">{{ category.name }}</div>
+              <div class="category-count">
+                {{ getSessionCountByCategory(category.id) }} 个会话
+              </div>
+            </div>
+            
+            <a-dropdown trigger="click" @select="(key) => handleCategoryAction(key, category)">
+              <a-button type="text" size="mini">
+                <template #icon>
+                  <icon-more />
+                </template>
+              </a-button>
+              <template #content>
+                <a-doption value="rename">重命名</a-doption>
+                <a-doption value="delete" class="danger">删除</a-doption>
+              </template>
+            </a-dropdown>
+          </div>
+          
+          <a-empty 
+            v-if="categories.length === 0 && !sessionStore.loading"
+            description="暂无分类"
+          />
+        </a-spin>
+      </div>
+    </div>
+
+    <!-- 新建会话模态框 -->
+    <a-modal
+      v-model:visible="showCreateSessionModal"
+      title="新建会话"
+      @ok="handleCreateSession"
+      @cancel="resetCreateSessionForm"
+    >
+      <a-form :model="createSessionForm" layout="vertical">
+        <a-form-item label="会话标题" required>
+          <a-input 
+            v-model="createSessionForm.title" 
+            placeholder="请输入会话标题"
+            @keyup.enter="handleCreateSession"
+          />
+        </a-form-item>
+        <a-form-item label="选择分类" required>
+          <a-select v-model="createSessionForm.categoryID" placeholder="选择分类">
+            <a-option 
               v-for="category in categories"
               :key="category.id"
-              class="category-item"
+              :value="category.id"
             >
-              <div class="category-content">
-                <div class="category-name">{{ category.name }}</div>
-                <div class="category-count">{{ getCategorySessionCount(category.id) }} 个会话</div>
-              </div>
-              
-              <div class="category-actions" @click.stop>
-                <a-dropdown trigger="click">
-                  <a-button type="text" size="mini">
-                    <template #icon>
-                      <icon-more />
-                    </template>
-                  </a-button>
-                  <template #content>
-                    <a-doption @click="editCategory(category)">
-                      <template #icon>
-                        <icon-edit />
-                      </template>
-                      重命名
-                    </a-doption>
-                    <a-doption @click="deleteCategory(category)" class="danger">
-                      <template #icon>
-                        <icon-delete />
-                      </template>
-                      删除
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </div>
-            </div>
-          </div>
-        </a-tab-pane>
-      </a-tabs>
-    </div>
+              {{ category.name }}
+            </a-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- 新建分类模态框 -->
+    <a-modal
+      v-model:visible="showCreateCategoryModal"
+      title="新建分类"
+      @ok="handleCreateCategory"
+      @cancel="resetCreateCategoryForm"
+    >
+      <a-form :model="createCategoryForm" layout="vertical">
+        <a-form-item label="分类名称" required>
+          <a-input 
+            v-model="createCategoryForm.name" 
+            placeholder="请输入分类名称"
+            @keyup.enter="handleCreateCategory"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
 import { 
-  IconPlus, 
-  IconMore, 
-  IconEdit, 
-  IconDelete,
-  IconFolder
+  IconLeft, 
+  IconMore 
 } from '@arco-design/web-vue/es/icon'
-import { useSessionStore } from '@/stores/session'
-import { formatRelativeTime, truncateText } from '@/utils/format'
+import dayjs from 'dayjs'
 import type { Session, Category } from '@/types'
 
+// 使用stores
 const sessionStore = useSessionStore()
+const dialogStore = useDialogStore()
+const layoutStore = useLayoutStore()
 
-// 响应式数据
+// 响应式状态
 const activeTab = ref('sessions')
-const selectedCategoryId = ref<number | null>(null)
-const loading = ref(false)
+const selectedCategoryId = ref<number | string | null>(null)
+const showCreateSessionModal = ref(false)
+const showCreateCategoryModal = ref(false)
 
-// 计算属性
-const sessions = computed(() => sessionStore.sessions)
-const categories = computed(() => sessionStore.categories)
-
-const filteredSessions = computed(() => {
-  if (!selectedCategoryId.value) {
-    return sessions.value
-  }
-  return sessions.value.filter(session => session.categoryID === selectedCategoryId.value)
+// 表单数据
+const createSessionForm = ref({
+  title: '',
+  categoryID: null as number | null,
 })
 
-// 方法
-const isCurrentSession = (sessionId: number): boolean => {
-  return sessionStore.currentSessionId === sessionId
+const createCategoryForm = ref({
+  name: '',
+})
+
+// 计算属性
+const currentSessionId = computed(() => sessionStore.currentSessionId)
+const categories = computed(() => sessionStore.categories)
+const filteredSessions = computed(() => sessionStore.filteredSessions)
+
+// 监听分类选择变化
+watch(selectedCategoryId, (newCategoryId) => {
+  if (newCategoryId === 'all') {
+    sessionStore.setSelectedCategory(null)
+  } else {
+    sessionStore.setSelectedCategory(newCategoryId as number)
+  }
+})
+
+// ===== 方法 =====
+
+// 格式化时间
+function formatTime(timeStr: string): string {
+  return dayjs(timeStr).format('MM-DD HH:mm')
 }
 
-const selectSession = (sessionId: number) => {
-  sessionStore.setCurrentSession(sessionId)
+// 获取分类下的会话数量
+function getSessionCountByCategory(categoryId: number): number {
+  return sessionStore.sessions.filter(s => s.categoryID === categoryId).length
 }
 
-const createNewSession = async () => {
-  loading.value = true
+// 选择会话
+async function selectSession(sessionId: number) {
   try {
-    await sessionStore.createSession({
-      title: '新对话',
-      categoryID: selectedCategoryId.value || 1
-    })
+    sessionStore.setCurrentSession(sessionId)
+    await dialogStore.fetchDialogTree(sessionId)
   } catch (error) {
-    console.error('创建会话失败:', error)
-  } finally {
-    loading.value = false
+    Message.error('加载会话失败')
   }
 }
 
-const editSession = (session: Session) => {
-  console.log('编辑会话:', session)
-  // TODO: 实现编辑会话功能
-}
-
-const moveToCategory = (session: Session) => {
-  console.log('移动分类:', session)
-  // TODO: 实现移动分类功能
-}
-
-const deleteSession = async (session: Session) => {
-  try {
-    await sessionStore.deleteSession(session.id)
-  } catch (error) {
-    console.error('删除会话失败:', error)
+// 分类筛选变化
+async function handleCategoryChange(categoryId: number | string) {
+  if (categoryId !== 'all') {
+    try {
+      await sessionStore.fetchSessionsByCategory(categoryId as number)
+    } catch (error) {
+      // 降级处理已在store中实现
+    }
   }
 }
 
-const createNewCategory = () => {
-  console.log('创建新分类')
-  // TODO: 实现创建分类功能
+// 清除分类筛选
+function handleCategoryClear() {
+  selectedCategoryId.value = null
 }
 
-const editCategory = (category: Category) => {
-  console.log('编辑分类:', category)
-  // TODO: 实现编辑分类功能
+// 会话操作
+function handleSessionAction(action: string, session: Session) {
+  switch (action) {
+    case 'rename':
+      // TODO: 实现重命名功能
+      Message.info('重命名功能待实现')
+      break
+    case 'move':
+      // TODO: 实现移动分类功能
+      Message.info('移动分类功能待实现')
+      break
+    case 'delete':
+      confirmDeleteSession(session)
+      break
+  }
 }
 
-const deleteCategory = (category: Category) => {
-  console.log('删除分类:', category)
-  // TODO: 实现删除分类功能
+// 分类操作
+function handleCategoryAction(action: string, category: Category) {
+  switch (action) {
+    case 'rename':
+      // TODO: 实现重命名功能
+      Message.info('重命名功能待实现')
+      break
+    case 'delete':
+      confirmDeleteCategory(category)
+      break
+  }
 }
 
-const getCategorySessionCount = (categoryId: number): number => {
-  return sessions.value.filter(session => session.categoryID === categoryId).length
+// 确认删除会话
+function confirmDeleteSession(session: Session) {
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除会话"${session.title}"吗？此操作不可恢复。`,
+    onOk: async () => {
+      try {
+        await sessionStore.deleteSession(session.id)
+        Message.success('删除成功')
+      } catch (error) {
+        Message.error('删除失败')
+      }
+    }
+  })
 }
 
-const onCategoryChange = () => {
-  // 分类变化时的处理
+// 确认删除分类
+function confirmDeleteCategory(category: Category) {
+  const sessionCount = getSessionCountByCategory(category.id)
+  if (sessionCount > 0) {
+    Message.warning(`该分类下还有 ${sessionCount} 个会话，请先移动或删除这些会话`)
+    return
+  }
+
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除分类"${category.name}"吗？`,
+    onOk: async () => {
+      try {
+        await sessionStore.deleteCategory(category.id)
+        Message.success('删除成功')
+      } catch (error) {
+        Message.error('删除失败')
+      }
+    }
+  })
 }
 
-// 初始化
-sessionStore.fetchSessions()
-sessionStore.fetchCategories()
+// 创建会话
+async function handleCreateSession() {
+  if (!createSessionForm.value.title?.trim()) {
+    Message.warning('请输入会话标题')
+    return
+  }
+  if (!createSessionForm.value.categoryID) {
+    Message.warning('请选择分类')
+    return
+  }
+
+  try {
+    await sessionStore.createSession(
+      createSessionForm.value.title.trim(),
+      createSessionForm.value.categoryID
+    )
+    Message.success('创建成功')
+    showCreateSessionModal.value = false
+    resetCreateSessionForm()
+  } catch (error) {
+    Message.error('创建失败')
+  }
+}
+
+// 创建分类
+async function handleCreateCategory() {
+  if (!createCategoryForm.value.name?.trim()) {
+    Message.warning('请输入分类名称')
+    return
+  }
+
+  try {
+    await sessionStore.createCategory(createCategoryForm.value.name.trim())
+    Message.success('创建成功')
+    showCreateCategoryModal.value = false
+    resetCreateCategoryForm()
+  } catch (error) {
+    Message.error('创建失败')
+  }
+}
+
+// 重置表单
+function resetCreateSessionForm() {
+  createSessionForm.value = {
+    title: '',
+    categoryID: null,
+  }
+}
+
+function resetCreateCategoryForm() {
+  createCategoryForm.value = {
+    name: '',
+  }
+}
+
+// 切换侧边栏
+function toggleSidebar() {
+  layoutStore.toggleSidebar()
+}
 </script>
 
 <style lang="less" scoped>
 .session-sidebar {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
+  height: 100%;
+  background-color: #fff;
 }
 
 .sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
   
-  .title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-}
-
-.sidebar-tabs {
-  flex: 1;
-  padding: 0 8px;
-  overflow: hidden;
-  
-  :deep(.arco-tabs-content) {
-    height: calc(100vh - 120px);
-    overflow: hidden;
-  }
-  
-  :deep(.arco-tabs-pane) {
-    height: 100%;
+  .header-actions {
     display: flex;
-    flex-direction: column;
+    gap: 8px;
   }
 }
 
-.tab-header {
-  padding: 12px 8px;
+.tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .category-filter {
-  padding: 0 8px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-actions {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .session-list,
 .category-list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 8px;
-}
-
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
+  padding: 8px 0;
 }
 
 .session-item,
 .category-item {
   display: flex;
   align-items: center;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 8px;
+  justify-content: space-between;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color-light);
-  
+  transition: background-color 0.2s;
+
   &:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--primary-color);
+    background-color: #f5f5f5;
   }
-  
+
   &.active {
-    background: var(--primary-1);
-    border-color: var(--primary-color);
+    background-color: #e6f7ff;
+    border-right: 3px solid #1890ff;
   }
 }
 
-.session-content,
-.category-content {
+.session-info,
+.category-info {
   flex: 1;
   min-width: 0;
 }
 
 .session-title,
 .category-name {
-  font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
   margin-bottom: 4px;
-  word-wrap: break-word;
-  line-height: 1.4;
-}
-
-.session-summary {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-  line-height: 1.3;
-  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #666;
 }
 
 .session-time {
-  font-size: 11px;
-  color: var(--text-tertiary);
+  color: #999;
+}
+
+.session-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .category-count {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #999;
 }
 
-.session-actions,
-.category-actions {
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.session-item:hover .session-actions,
-.category-item:hover .category-actions {
-  opacity: 1;
-}
-
+// 危险操作样式
 :deep(.arco-dropdown-option.danger) {
-  color: var(--color-danger-6);
+  color: #f5222d;
   
   &:hover {
-    background: var(--color-danger-1);
+    background-color: #fff2f0;
   }
 }
-</style> 
+</style>

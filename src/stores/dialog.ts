@@ -1,200 +1,316 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DialogTreeData, ConversationTreeNode, Conversation, CreateDialogRequest } from '@/types'
-import { dialogApi } from '@/api/dialog'
-import { transformDialogTreeToConversationTree, extractChatHistoryFromConversationTree, findConversationNodeById } from '@/utils/treeTransform'
+import { sessionApi, dialogApi } from '@/api'
+import { 
+  transformDialogTreeToConversationTree,
+  buildChatHistoryFromAncestors,
+  getAncestorNodeIds,
+  getStarredNodeIds 
+} from '@/utils/treeTransform'
+import type { 
+  DialogTreeData, 
+  ConversationTreeNode, 
+  ChatMessage, 
+  Conversation,
+  CreateDialogRequest 
+} from '@/types'
 
 export const useDialogStore = defineStore('dialog', () => {
-  // 状态
+  // ===== 状态 =====
   const dialogTreeData = ref<DialogTreeData | null>(null)
+  const conversationTree = ref<ConversationTreeNode | null>(null)
   const selectedConversationId = ref<number | null>(null)
-  const ancestorConversationIds = ref<number[]>([])
+  const ancestorConversations = ref<Conversation[]>([])
+  const chatHistory = ref<ChatMessage[]>([])
+  
+  // SSE流式响应状态
   const isStreaming = ref(false)
   const streamingContent = ref('')
+  const streamingError = ref('')
+  
   const loading = ref(false)
+  const error = ref('')
 
-  // 计算属性
-  const dialogTree = computed(() => dialogTreeData.value?.dialogTree || [])
-  
-  const sessionInfo = computed(() => dialogTreeData.value?.sessionInfo || null)
-  
-  // 转换后的conversation树
-  const conversationTree = computed(() => {
-    if (!dialogTree.value || dialogTree.value.length === 0) return null
-    return transformDialogTreeToConversationTree(dialogTree.value)
-  })
-  
-  // 当前对话历史（用于ChatPanel）
-  const currentChatHistory = computed(() => {
-    return extractChatHistoryFromConversationTree(conversationTree.value)
-  })
-  
+  // ===== 计算属性 =====
+
+  // 当前选中的对话节点
   const selectedConversation = computed(() => {
-    if (!selectedConversationId.value || !conversationTree.value) return null
+    if (!conversationTree.value || !selectedConversationId.value) return null
     
-    // 使用新的工具函数查找conversation
-    const foundNode = findConversationNodeById(conversationTree.value, selectedConversationId.value)
-    if (!foundNode) return null
-    
-    // 构造Conversation对象
-    return {
-      id: foundNode.conversationId,
-      prompt: foundNode.prompt || '',
-      answer: foundNode.answer || '',
-      title: foundNode.title,
-      summary: foundNode.summary,
-      isStarred: foundNode.isStarred,
-      comment: foundNode.comment,
-      createdAt: foundNode.createdAt,
-      dialogId: foundNode.dialogId
+    function findNode(node: ConversationTreeNode): ConversationTreeNode | null {
+      if (node.conversationId === selectedConversationId.value) return node
+      for (const child of node.children) {
+        const found = findNode(child)
+        if (found) return found
+      }
+      return null
     }
+    
+    return findNode(conversationTree.value)
   })
 
-  // 方法
-  const fetchDialogTree = async (sessionId: number): Promise<void> => {
-    loading.value = true
+  // 祖先节点ID列表（用于高亮显示）
+  const ancestorNodeIds = computed(() => 
+    selectedConversationId.value 
+      ? getAncestorNodeIds(conversationTree.value, selectedConversationId.value)
+      : []
+  )
+
+  // 收藏节点ID列表
+  const starredNodeIds = computed(() => 
+    getStarredNodeIds(conversationTree.value)
+  )
+
+  // 当前聊天历史（基于祖先API数据）
+  const currentChatHistory = computed(() => {
+    if (ancestorConversations.value.length === 0) return []
+    
+    const history = buildChatHistoryFromAncestors(ancestorConversations.value)
+    
+    // 转换为ChatMessage格式
+    return history.map(node => ({
+      id: node.id,
+      role: node.type,
+      content: node.content,
+      timestamp: node.createdAt,
+      conversationId: node.conversationId,
+      isStarred: node.isStarred,
+      comment: node.comment,
+    }))
+  })
+
+  // 是否有对话树数据
+  const hasDialogTree = computed(() => 
+    dialogTreeData.value?.dialogTree && dialogTreeData.value.dialogTree.length > 0
+  )
+
+  // ===== Actions =====
+
+  // 获取会话的对话树
+  async function fetchDialogTree(sessionId: number) {
     try {
-      const response = await dialogApi.getDialogTree(sessionId)
-      if (response.code === 0) {
-        dialogTreeData.value = response.data
-      }
-    } catch (error) {
-      console.error('获取对话树失败:', error)
-      throw error
+      loading.value = true
+      error.value = ''
+      
+      const data = await sessionApi.getSessionTree(sessionId)
+      dialogTreeData.value = data
+      
+      // 转换为前端对话树结构
+      conversationTree.value = transformDialogTreeToConversationTree(data.dialogTree)
+      
+      // 清除之前的选中状态
+      selectedConversationId.value = null
+      ancestorConversations.value = []
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取对话树失败'
+      console.error('Failed to fetch dialog tree:', err)
+      
+      // 清空状态
+      dialogTreeData.value = null
+      conversationTree.value = null
     } finally {
       loading.value = false
     }
   }
 
-  const createDialog = async (request: CreateDialogRequest): Promise<void> => {
-    try {
-      // 这里会使用SSE流式响应
+  // 创建新对话（SSE流式响应）
+  async function createDialog(request: CreateDialogRequest) {
+    return new Promise<{ dialogId: number; conversationId: number }>((resolve, reject) => {
       isStreaming.value = true
       streamingContent.value = ''
-      
-      await dialogApi.createDialog(
+      streamingError.value = ''
+
+      dialogApi.createDialog(
         request,
+        // onMessage
         (content: string) => {
-          // 流式内容更新回调
           streamingContent.value += content
         },
-        () => {
-          // 流式完成回调
-          isStreaming.value = false
-          // 重新获取对话树
-          if (request.sessionId) {
-            fetchDialogTree(request.sessionId)
+        // onComplete
+        async (result) => {
+          try {
+            isStreaming.value = false
+            
+            // 重新获取对话树以更新显示
+            if (dialogTreeData.value) {
+              await fetchDialogTree(dialogTreeData.value.sessionId)
+            }
+            
+            // 自动选中新创建的对话
+            selectedConversationId.value = result.conversationId
+            await fetchAncestors(result.conversationId)
+            
+            resolve(result)
+          } catch (err) {
+            console.error('Failed to refresh dialog tree after creation:', err)
+            reject(err)
           }
         },
-        (error: Error) => {
-          // 错误回调
-          console.error('对话创建失败:', error)
+        // onError
+        (errorMsg: string) => {
           isStreaming.value = false
+          streamingError.value = errorMsg
+          reject(new Error(errorMsg))
         }
       )
-    } catch (error) {
-      console.error('创建对话失败:', error)
-      isStreaming.value = false
-      throw error
-    }
+    })
   }
 
-  const starConversation = async (conversationId: number): Promise<boolean> => {
+  // 获取祖先对话链
+  async function fetchAncestors(conversationId: number) {
     try {
-      const response = await dialogApi.starConversation(conversationId)
-      if (response.code === 0) {
-        return response.data.isStarred
-      }
-      return false
-    } catch (error) {
-      console.error('标星操作失败:', error)
-      throw error
+      loading.value = true
+      error.value = ''
+      
+      const ancestors = await dialogApi.getAncestors(conversationId)
+      ancestorConversations.value = ancestors
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取祖先对话失败'
+      console.error('Failed to fetch ancestors:', err)
+      
+      // 清空祖先数据
+      ancestorConversations.value = []
+    } finally {
+      loading.value = false
     }
   }
 
-  const updateComment = async (conversationId: number, comment: string): Promise<void> => {
+  // 标星/取消标星对话
+  async function toggleStar(conversationId: number) {
     try {
-      const response = await dialogApi.updateComment({
-        id: conversationId,
-        comment
-      })
-      if (response.code !== 0) {
-        throw new Error(response.msg)
+      const result = await dialogApi.toggleStar(conversationId)
+      
+      // 重新获取对话树以更新显示
+      if (dialogTreeData.value) {
+        await fetchDialogTree(dialogTreeData.value.sessionId)
       }
-    } catch (error) {
-      console.error('更新评论失败:', error)
-      throw error
+      
+      // 如果是当前选中的对话，重新获取祖先数据
+      if (selectedConversationId.value === conversationId) {
+        await fetchAncestors(conversationId)
+      }
+      
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '标星操作失败'
+      console.error('Failed to toggle star:', err)
+      throw err
     }
   }
 
-  const deleteComment = async (conversationId: number): Promise<void> => {
+  // 更新对话评论
+  async function updateComment(conversationId: number, comment: string) {
     try {
-      const response = await dialogApi.deleteComment(conversationId)
-      if (response.code !== 0) {
-        throw new Error(response.msg)
+      await dialogApi.updateComment({ id: conversationId, comment })
+      
+      // 重新获取对话树以更新显示
+      if (dialogTreeData.value) {
+        await fetchDialogTree(dialogTreeData.value.sessionId)
       }
-    } catch (error) {
-      console.error('删除评论失败:', error)
-      throw error
+      
+      // 如果是当前选中的对话，重新获取祖先数据
+      if (selectedConversationId.value === conversationId) {
+        await fetchAncestors(conversationId)
+      }
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '更新评论失败'
+      console.error('Failed to update comment:', err)
+      throw err
     }
   }
 
-  const setSelectedConversation = async (conversationId: number | null): Promise<void> => {
+  // 删除对话评论
+  async function deleteComment(conversationId: number) {
+    try {
+      await dialogApi.deleteComment(conversationId)
+      
+      // 重新获取对话树以更新显示
+      if (dialogTreeData.value) {
+        await fetchDialogTree(dialogTreeData.value.sessionId)
+      }
+      
+      // 如果是当前选中的对话，重新获取祖先数据
+      if (selectedConversationId.value === conversationId) {
+        await fetchAncestors(conversationId)
+      }
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除评论失败'
+      console.error('Failed to delete comment:', err)
+      throw err
+    }
+  }
+
+  // ===== 辅助方法 =====
+
+  // 设置选中的对话
+  async function setSelectedConversation(conversationId: number | null) {
     selectedConversationId.value = conversationId
-    ancestorConversationIds.value = []
     
     if (conversationId) {
-      try {
-        const response = await dialogApi.getConversationAncestors(conversationId)
-        if (response.code === 0 && response.data) {
-          // 祖先节点数组包含从根到当前节点的完整路径
-          ancestorConversationIds.value = response.data.map((conv: any) => conv.id)
-        }
-      } catch (error) {
-        console.error('获取祖先节点失败:', error)
-      }
+      await fetchAncestors(conversationId)
+    } else {
+      ancestorConversations.value = []
     }
   }
 
-  const clearStreaming = (): void => {
+  // 清除流式响应状态
+  function clearStreamingState() {
     isStreaming.value = false
     streamingContent.value = ''
+    streamingError.value = ''
   }
 
-  // 清理状态
-  const reset = (): void => {
+  // 清除错误状态
+  function clearError() {
+    error.value = ''
+    streamingError.value = ''
+  }
+
+  // 重置所有状态
+  function reset() {
     dialogTreeData.value = null
+    conversationTree.value = null
     selectedConversationId.value = null
-    ancestorConversationIds.value = []
-    isStreaming.value = false
-    streamingContent.value = ''
-    loading.value = false
+    ancestorConversations.value = []
+    chatHistory.value = []
+    clearStreamingState()
+    clearError()
   }
 
   return {
     // 状态
     dialogTreeData,
+    conversationTree,
     selectedConversationId,
+    ancestorConversations,
+    chatHistory,
     isStreaming,
     streamingContent,
+    streamingError,
     loading,
+    error,
     
     // 计算属性
-    dialogTree,
-    sessionInfo,
-    conversationTree,
-    currentChatHistory,
     selectedConversation,
-    ancestorConversationIds,
+    ancestorNodeIds,
+    starredNodeIds,
+    currentChatHistory,
+    hasDialogTree,
     
-    // 方法
+    // Actions
     fetchDialogTree,
     createDialog,
-    starConversation,
+    fetchAncestors,
+    toggleStar,
     updateComment,
     deleteComment,
     setSelectedConversation,
-    clearStreaming,
-    reset
+    clearStreamingState,
+    clearError,
+    reset,
   }
-}) 
+})

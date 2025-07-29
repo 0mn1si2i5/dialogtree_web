@@ -1,9 +1,9 @@
 <template>
   <div class="not-found">
-    <a-result
-      status="404"
-      title="404"
-      subtitle="抱歉，您访问的页面不存在"
+    <a-result 
+      status="404" 
+      title="404" 
+      sub-title="抱歉，您访问的页面不存在"
     >
       <template #extra>
         <a-button type="primary" @click="goHome">
@@ -19,16 +19,18 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const goHome = () => {
+function goHome() {
   router.push('/')
 }
 </script>
 
 <style lang="less" scoped>
 .not-found {
-  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f5f5f5;
 }
-</style> 
+</style>

@@ -1,190 +1,170 @@
 <template>
-  <div class="dialog-tree-visualization">
-    <!-- 顶部工具栏 -->
+  <div class="tree-visualization">
+    <!-- 工具栏 -->
     <div class="tree-toolbar">
       <div class="toolbar-left">
-        <span class="current-session-title">
-          {{ currentSession?.title || '请选择一个对话' }}
-        </span>
-        
-        <!-- 图例说明 -->
-        <div class="legend" v-if="hasDialogTree">
-          <span class="legend-item">
-            <span class="legend-dot current-dot"></span>
-            当前节点
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot ancestor-dot"></span>
-            祖先节点
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot starred-dot"></span>
-            收藏节点
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot other-dot"></span>
-            其他节点
-          </span>
+        <a-button-group size="small">
+          <a-button @click="fitToScreen">
+            <template #icon>
+              <icon-fullscreen />
+            </template>
+            适应屏幕
+          </a-button>
+          <a-button @click="resetZoom">
+            <template #icon>
+              <icon-refresh />
+            </template>
+            实际大小
+          </a-button>
+        </a-button-group>
+      </div>
+      
+      <div class="toolbar-right">
+        <!-- 节点颜色图例 -->
+        <div class="color-legend">
+          <div class="legend-item">
+            <div class="legend-color current"></div>
+            <span>当前选中</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color ancestor"></div>
+            <span>祖先路径</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color starred"></div>
+            <span>已收藏</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color default"></div>
+            <span>普通节点</span>
+          </div>
         </div>
       </div>
-      <div class="toolbar-right">
-        <a-space>
-          <!-- 缩放控制 -->
-          <a-button-group size="small">
-            <a-button @click="zoomIn">
-              <template #icon>
-                <icon-zoom-in />
-              </template>
-            </a-button>
-            <a-button @click="zoomOut">
-              <template #icon>
-                <icon-zoom-out />
-              </template>
-            </a-button>
-            <a-button @click="resetZoom">
-              <template #icon>
-                <icon-refresh />
-              </template>
-            </a-button>
-          </a-button-group>
-          
-          <!-- 显示模式控制 -->
-          <a-button-group size="small">
-            <a-button 
-              @click="fitToScreen" 
-              :type="displayMode === 'fit' ? 'primary' : 'secondary'"
-            >
-              <template #icon>
-                <icon-fullscreen />
-              </template>
-              适应屏幕
-            </a-button>
-            <a-button 
-              @click="actualSize" 
-              :type="displayMode === 'actual' ? 'primary' : 'secondary'"
-            >
-              <template #icon>
-                <icon-eye />
-              </template>
-              实际大小
-            </a-button>
-          </a-button-group>
-        </a-space>
-      </div>
     </div>
 
-    <!-- D3.js 树形图容器 -->
-    <div class="tree-container" ref="treeContainerRef">
+    <!-- SVG容器 -->
+    <div class="tree-container" ref="containerRef">
       <svg ref="svgRef" class="tree-svg">
-        <g ref="containerRef"></g>
+        <defs>
+          <!-- 定义箭头标记 -->
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon
+              points="0 0, 10 3.5, 0 7"
+              fill="var(--node-default)"
+            />
+          </marker>
+        </defs>
+        <g class="tree-group"></g>
       </svg>
-      
-      <!-- Hover Tooltip -->
-      <div 
-        v-if="showTooltip" 
-        class="node-tooltip"
-        :style="{
-          left: tooltipPosition.x + 'px',
-          top: tooltipPosition.y + 'px'
-        }"
-      >
-        {{ tooltipContent }}
-      </div>
-      
-      <!-- 当没有对话树时显示的占位符 -->
-      <div v-if="!hasDialogTree" class="empty-tree">
-        <a-empty description="暂无对话树">
-          <template #image>
-            <icon-branch />
-          </template>
-          <div class="empty-hint">
-            选择一个会话并开始对话，将会生成对话树
-          </div>
-        </a-empty>
-      </div>
     </div>
 
-    <!-- 对话详情Modal -->
-    <ConversationDetailModal
-      v-model:visible="showDetailModal"
-      :conversation-id="selectedConversationId"
-      @continue-from-here="handleContinueFromHere"
-    />
+    <!-- 悬停提示 -->
+    <div 
+      v-show="tooltipVisible"
+      class="tree-tooltip"
+      :style="tooltipStyle"
+    >
+      {{ tooltipContent }}
+    </div>
+
+    <!-- 空状态 -->
+    <div v-if="!hasDialogTree" class="empty-state">
+      <a-empty description="选择一个会话开始对话" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as d3 from 'd3'
-import { IconZoomIn, IconZoomOut, IconRefresh, IconBranch } from '@arco-design/web-vue/es/icon'
-import { useSessionStore } from '@/stores/session'
-import { useDialogStore } from '@/stores/dialog'
-import ConversationDetailModal from './ConversationDetailModal.vue'
+import { useDialogStore } from '@/stores'
+import { 
+  IconFullscreen, 
+  IconRefresh 
+} from '@arco-design/web-vue/es/icon'
 import type { ConversationTreeNode } from '@/types'
 
-const sessionStore = useSessionStore()
+// 使用stores
 const dialogStore = useDialogStore()
 
-// DOM引用
-const treeContainerRef = ref<HTMLElement>()
-const svgRef = ref<SVGSVGElement>()
-const containerRef = ref<SVGGElement>()
+// 模板引用
+const containerRef = ref<HTMLElement>()
+const svgRef = ref<SVGElement>()
 
-// D3相关变量
-let svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
-let g: d3.Selection<SVGGElement, unknown, null, undefined>
-let zoom: d3.ZoomBehavior<SVGSVGElement, unknown>
-let tree: d3.TreeLayout<ConversationTreeNode>
-
-// 响应式数据
-const width = ref(800)
-const height = ref(600)
-const showDetailModal = ref(false)
-const selectedConversationId = ref<number | null>(null)
-const displayMode = ref<'fit' | 'actual'>('actual')
-
-// Tooltip相关
-const showTooltip = ref(false)
+// 状态
+const tooltipVisible = ref(false)
 const tooltipContent = ref('')
-const tooltipPosition = ref({ x: 0, y: 0 })
-let hoverTimer: number | null = null
+const tooltipStyle = ref({})
 
 // 计算属性
-const currentSession = computed(() => sessionStore.currentSession)
 const conversationTree = computed(() => dialogStore.conversationTree)
-const hasDialogTree = computed(() => conversationTree.value !== null)
+const selectedConversationId = computed(() => dialogStore.selectedConversationId)
+const ancestorNodeIds = computed(() => dialogStore.ancestorNodeIds)
+const starredNodeIds = computed(() => dialogStore.starredNodeIds)
+const hasDialogTree = computed(() => dialogStore.hasDialogTree)
 
-// 监听当前会话变化
-watch(() => sessionStore.currentSessionId, async (newSessionId) => {
-  if (newSessionId) {
-    await dialogStore.fetchDialogTree(newSessionId)
-    await nextTick()
-    renderTree()
+// D3相关变量
+let svg: d3.Selection<SVGElement, unknown, null, undefined>
+let g: d3.Selection<SVGGElement, unknown, null, undefined>
+let tree: d3.TreeLayout<ConversationTreeNode>
+let zoom: d3.ZoomBehavior<SVGElement, unknown>
+
+// 树形图配置
+const nodeRadius = 8
+const nodeSpacing = { x: 200, y: 80 }
+let hoverId: number | null = null
+let hoverTimeout: NodeJS.Timeout | null = null
+
+// ===== 初始化D3 =====
+onMounted(() => {
+  initializeD3()
+  
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
   }
-}, { immediate: true })
+})
 
-// 监听对话树数据变化
+// 监听数据变化
 watch(conversationTree, () => {
-  renderTree()
+  nextTick(() => {
+    renderTree()
+  })
 }, { deep: true })
 
-// 初始化D3
-const initD3 = () => {
+watch([selectedConversationId, ancestorNodeIds, starredNodeIds], () => {
+  updateNodeStyles()
+}, { deep: true })
+
+// ===== D3初始化 =====
+function initializeD3() {
   if (!svgRef.value || !containerRef.value) return
 
-  // 获取容器尺寸
-  const container = treeContainerRef.value!
-  width.value = container.clientWidth
-  height.value = container.clientHeight
+  const container = containerRef.value
+  const width = container.clientWidth
+  const height = container.clientHeight
 
+  // 初始化SVG
   svg = d3.select(svgRef.value)
-    .attr('width', width.value)
-    .attr('height', height.value)
+    .attr('width', width)
+    .attr('height', height)
 
-  g = d3.select(containerRef.value)
+  g = svg.select('.tree-group')
 
-  // 设置缩放行为
-  zoom = d3.zoom<SVGSVGElement, unknown>()
+  // 初始化缩放行为
+  zoom = d3.zoom<SVGElement, unknown>()
     .scaleExtent([0.1, 3])
     .on('zoom', (event) => {
       g.attr('transform', event.transform)
@@ -192,307 +172,326 @@ const initD3 = () => {
 
   svg.call(zoom)
 
-  // 初始化树布局
+  // 初始化树形布局
   tree = d3.tree<ConversationTreeNode>()
-    .size([height.value - 100, width.value - 200])
+    .nodeSize([nodeSpacing.x, nodeSpacing.y])
+    .separation((a, b) => {
+      // 增大同级节点间距离
+      return a.parent === b.parent ? 1.2 : 2
+    })
 }
 
-// 渲染树形图
-const renderTree = () => {
-  if (!g || !conversationTree.value) return
+// ===== 渲染树形图 =====
+function renderTree() {
+  if (!conversationTree.value || !g) return
 
-  // 清除之前的内容
-  g.selectAll('*').remove()
-
-  // 创建层次数据
-  const root = d3.hierarchy(conversationTree.value)
+  // 创建层次结构
+  const root = d3.hierarchy(conversationTree.value, d => d.children)
   
-  // 应用树布局
+  // 计算节点位置
   tree(root)
 
-  // 绘制连接线
-  const links = g.selectAll('.link')
-    .data(root.links())
-    .enter()
+  // 渲染连接线
+  renderLinks(root.links())
+  
+  // 渲染节点
+  renderNodes(root.descendants())
+
+  // 自动居中显示
+  fitToScreen()
+}
+
+// 渲染连接线
+function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
+  const linkSelection = g.selectAll<SVGPathElement, d3.HierarchyLink<ConversationTreeNode>>('.link')
+    .data(links, d => `${d.source.data.id}-${d.target.data.id}`)
+
+  // 移除旧连接线
+  linkSelection.exit().remove()
+
+  // 添加新连接线
+  const linkEnter = linkSelection.enter()
     .append('path')
     .attr('class', 'link')
-    .attr('d', d3.linkHorizontal<d3.HierarchyLink<ConversationTreeNode>, d3.HierarchyPointNode<ConversationTreeNode>>()
-      .x(d => d.y + 100)
-      .y(d => d.x + 50)
-    )
-    .style('fill', 'none')
-    .style('stroke', '#ccc')
-    .style('stroke-width', 2)
+    .attr('fill', 'none')
+    .attr('stroke', '#ccc')
+    .attr('stroke-width', 2)
+    .attr('marker-end', 'url(#arrowhead)')
 
-  // 绘制节点
-  const nodes = g.selectAll('.node')
-    .data(root.descendants())
-    .enter()
+  // 更新连接线路径
+  linkEnter.merge(linkSelection)
+    .attr('d', d => {
+      const source = d.source
+      const target = d.target
+      
+      // 使用贝塞尔曲线连接节点
+      return `M${source.x},${source.y}
+              C${source.x},${(source.y + target.y) / 2}
+               ${target.x},${(source.y + target.y) / 2}
+               ${target.x},${target.y}`
+    })
+}
+
+// 渲染节点
+function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
+  const nodeSelection = g.selectAll<SVGGElement, d3.HierarchyNode<ConversationTreeNode>>('.node')
+    .data(nodes, d => d.data.id.toString())
+
+  // 移除旧节点
+  nodeSelection.exit()
+    .transition()
+    .duration(300)
+    .style('opacity', 0)
+    .remove()
+
+  // 添加新节点组
+  const nodeEnter = nodeSelection.enter()
     .append('g')
     .attr('class', 'node')
-    .attr('transform', d => `translate(${(d.y || 0) + 100},${(d.x || 0) + 50})`)
-    .style('cursor', 'pointer')
-    .on('click', handleNodeClick)
+    .attr('transform', d => `translate(${d.x},${d.y})`)
+    .style('opacity', 0)
 
   // 添加节点圆圈
-  nodes.append('circle')
-    .attr('r', 8)
-    .style('fill', d => {
-      const conversationId = d.data.conversationId
-      const selectedId = dialogStore.selectedConversationId
-      const ancestorIds = dialogStore.ancestorConversationIds
-      
-      // 新的4色系统
-      if (conversationId === selectedId) {
-        return '#1890ff' // 蓝色：当前选中节点
-      } else if (ancestorIds.includes(conversationId)) {
-        return '#00b4d8' // 青色：祖先节点
-      } else if (d.data.isStarred) {
-        return '#ff7f0e' // 橙色：收藏节点
-      } else {
-        return '#94a3b8' // 灰色：其他节点
-      }
-    })
-    .style('stroke', '#fff')
-    .style('stroke-width', d => {
-      // 当前选中节点使用更粗的边框
-      const conversationId = d.data.conversationId
-      const selectedId = dialogStore.selectedConversationId
-      return conversationId === selectedId ? 3 : 2
-    })
+  nodeEnter.append('circle')
+    .attr('r', nodeRadius)
+    .attr('class', d => `node-circle ${d.data.type}`)
 
-  // 添加节点文本（支持换行）
-  const textNodes = nodes.append('text')
-    .attr('dy', '.35em')
-    .attr('x', d => d.children ? -13 : 13)
-    .style('text-anchor', d => d.children ? 'end' : 'start')
-    .style('font-size', '12px')
-    .style('fill', '#333')
-    .style('font-family', 'Arial, sans-serif')
+  // 添加节点文本
+  const textGroup = nodeEnter.append('g')
+    .attr('class', 'node-text')
+
+  // 文本背景
+  textGroup.append('rect')
+    .attr('class', 'text-background')
+    .attr('rx', 4)
+    .attr('ry', 4)
+
+  // 文本内容
+  textGroup.append('text')
+    .attr('class', 'text-content')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.35em')
+
+  // 更新现有节点
+  const nodeUpdate = nodeEnter.merge(nodeSelection)
+    .transition()
+    .duration(300)
+    .style('opacity', 1)
+    .attr('transform', d => `translate(${d.x},${d.y})`)
+
+  // 更新文本内容和样式
+  updateNodeTexts(nodeUpdate)
   
-  // 文本换行处理
-  textNodes.each(function(d) {
-    const text = d3.select(this)
-    const summary = d.data.summary || d.data.title || 'Conversation'
-    const maxWidth = 120 // 最大宽度
-    const lineHeight = 14 // 行高
-    
-    // 如果文本较短，直接显示
-    if (summary.length <= 15) {
-      text.text(summary)
-      return
-    }
-    
-    // 长文本进行换行处理
-    const words = summary.split('')
-    let line = ''
-    let lineNumber = 0
-    const maxLines = 2 // 最多2行
-    
-    text.text('') // 清空文本
-    
-    for (let i = 0; i < words.length; i++) {
-      const testLine = line + words[i]
+  // 添加交互事件
+  addNodeInteractions(nodeEnter.merge(nodeSelection))
+
+  // 更新节点样式
+  updateNodeStyles()
+}
+
+// 更新节点文本
+function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
+  selection.select('.text-content')
+    .text(d => {
+      const summary = d.data.summary || d.data.content || 'Conversation'
+      // 限制文本长度，支持换行
+      return summary.length > 30 ? summary.substring(0, 30) + '...' : summary
+    })
+    .each(function(d) {
+      const text = d3.select(this)
+      const content = d.data.summary || d.data.content || 'Conversation'
       
-      if (testLine.length > 15 && line) {
-        // 创建新行
-        if (lineNumber < maxLines - 1) {
-          text.append('tspan')
-            .attr('x', d.children ? -13 : 13)
-            .attr('dy', lineNumber === 0 ? '0em' : '1.2em')
-            .text(line)
-          line = words[i]
-          lineNumber++
-        } else {
-          // 最后一行，添加省略号
-          text.append('tspan')
-            .attr('x', d.children ? -13 : 13)
-            .attr('dy', lineNumber === 0 ? '0em' : '1.2em')
-            .text(line + '...')
-          break
+      // 如果文本太长，进行换行处理
+      if (content.length > 20) {
+        const words = content.split('')
+        text.text('')
+        
+        let tspan = text.append('tspan')
+          .attr('x', 0)
+          .attr('dy', '0em')
+        
+        let line = ''
+        for (let i = 0; i < Math.min(words.length, 40); i++) {
+          if (i > 0 && i % 20 === 0) {
+            tspan.text(line)
+            tspan = text.append('tspan')
+              .attr('x', 0)
+              .attr('dy', '1.2em')
+            line = words[i]
+          } else {
+            line += words[i]
+          }
         }
-      } else {
-        line = testLine
+        tspan.text(line + (content.length > 40 ? '...' : ''))
       }
-    }
-    
-    // 添加最后一行
-    if (line && lineNumber < maxLines) {
-      text.append('tspan')
-        .attr('x', d.children ? -13 : 13)
-        .attr('dy', lineNumber === 0 ? '0em' : '1.2em')
-        .text(line)
-    }
-  })
+    })
 
-  // 居中显示
-  const bounds = g.node()?.getBBox()
-  if (bounds) {
-    const centerX = (width.value - bounds.width) / 2 - bounds.x
-    const centerY = (height.value - bounds.height) / 2 - bounds.y
-    
-    svg.call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY))
+  // 更新文本背景
+  selection.select('.text-background')
+    .each(function() {
+      const textElement = d3.select(this.parentNode).select('.text-content')
+      const bbox = (textElement.node() as SVGTextElement)?.getBBox()
+      
+      if (bbox) {
+        d3.select(this)
+          .attr('x', bbox.x - 8)
+          .attr('y', bbox.y - 4)
+          .attr('width', bbox.width + 16)
+          .attr('height', bbox.height + 8)
+      }
+    })
+}
+
+// 添加节点交互
+function addNodeInteractions(selection: d3.Selection<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
+  selection
+    .style('cursor', 'pointer')
+    .on('click', (event, d) => {
+      handleNodeClick(d.data)
+    })
+    .on('mouseenter', (event, d) => {
+      handleNodeMouseEnter(event, d.data)
+    })
+    .on('mouseleave', () => {
+      handleNodeMouseLeave()
+    })
+}
+
+// 更新节点样式
+function updateNodeStyles() {
+  if (!g) return
+
+  g.selectAll<SVGCircleElement, d3.HierarchyNode<ConversationTreeNode>>('.node-circle')
+    .each(function(d) {
+      const circle = d3.select(this)
+      const conversationId = d.data.conversationId
+      
+      // 确定节点颜色
+      let colorClass = 'default'
+      if (conversationId === selectedConversationId.value) {
+        colorClass = 'current'
+      } else if (ancestorNodeIds.value.includes(conversationId)) {
+        colorClass = 'ancestor'
+      } else if (starredNodeIds.value.includes(conversationId)) {
+        colorClass = 'starred'
+      }
+      
+      // 移除所有颜色类
+      circle.classed('current ancestor starred default', false)
+      // 添加当前颜色类
+      circle.classed(colorClass, true)
+    })
+}
+
+// ===== 事件处理 =====
+
+// 节点点击事件
+function handleNodeClick(node: ConversationTreeNode) {
+  dialogStore.setSelectedConversation(node.conversationId)
+}
+
+// 节点悬停进入
+function handleNodeMouseEnter(event: MouseEvent, node: ConversationTreeNode) {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
+  }
+  
+  hoverId = node.id
+  
+  hoverTimeout = setTimeout(() => {
+    if (hoverId === node.id) {
+      showTooltip(event, node.summary || node.content || 'No content')
+    }
+  }, 500) // 0.5秒延迟
+}
+
+// 节点悬停离开
+function handleNodeMouseLeave() {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
+    hoverTimeout = null
+  }
+  hoverId = null
+  hideTooltip()
+}
+
+// 显示提示
+function showTooltip(event: MouseEvent, content: string) {
+  tooltipContent.value = content
+  tooltipStyle.value = {
+    left: event.clientX + 10 + 'px',
+    top: event.clientY - 10 + 'px',
+  }
+  tooltipVisible.value = true
+}
+
+// 隐藏提示
+function hideTooltip() {
+  tooltipVisible.value = false
+}
+
+// ===== 工具栏操作 =====
+
+// 适应屏幕
+function fitToScreen() {
+  if (!svg || !g || !containerRef.value) return
+
+  const container = containerRef.value
+  const width = container.clientWidth
+  const height = container.clientHeight
+
+  try {
+    const bounds = g.node()?.getBBox()
+    if (!bounds || bounds.width === 0 || bounds.height === 0) return
+
+    const fullWidth = bounds.width
+    const fullHeight = bounds.height
+    const midX = bounds.x + fullWidth / 2
+    const midY = bounds.y + fullHeight / 2
+
+    const scale = Math.min(
+      width / fullWidth,
+      height / fullHeight
+    ) * 0.8 // 留出边距
+
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(scale)
+      .translate(-midX, -midY)
+
+    svg.transition()
+      .duration(750)
+      .call(zoom.transform, transform)
+  } catch (error) {
+    console.warn('Failed to fit to screen:', error)
   }
 }
 
-// 节点点击处理
-const handleNodeClick = async (event: any, d: d3.HierarchyNode<ConversationTreeNode>) => {
-  console.log('节点被点击:', d.data)
-  
-  if (d.data.conversationId) {
-    // 设置选中节点并获取祖先节点
-    await dialogStore.setSelectedConversation(d.data.conversationId)
-    
-    // 重新渲染树以更新节点颜色
-    renderTree()
-    
-    // 显示对话详情Modal
-    selectedConversationId.value = d.data.conversationId
-    showDetailModal.value = true
-  }
-}
+// 重置缩放
+function resetZoom() {
+  if (!svg) return
 
-// 处理从某个节点继续对话
-const handleContinueFromHere = (conversationId: number) => {
-  console.log('从对话继续:', conversationId)
-  // 这里可以传递给ChatPanel组件，设置parentConversationId
-  // 目前先打印日志
-}
-
-// 显示模式控制
-const fitToScreen = () => {
-  displayMode.value = 'fit'
-  if (!g || !conversationTree.value) return
-  
-  // 获取所有节点的边界
-  const nodes = g.selectAll('.node').nodes()
-  if (nodes.length === 0) return
-  
-  // 计算边界框
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-  
-  nodes.forEach((node: any) => {
-    const transform = node.getAttribute('transform')
-    if (transform) {
-      const match = transform.match(/translate\(([^,]+),([^)]+)\)/)
-      if (match) {
-        const x = parseFloat(match[1])
-        const y = parseFloat(match[2])
-        minX = Math.min(minX, x)
-        maxX = Math.max(maxX, x)
-        minY = Math.min(minY, y)
-        maxY = Math.max(maxY, y)
-      }
-    }
-  })
-  
-  // 计算缩放比例和平移量
-  const nodeWidth = maxX - minX + 200 // 增加边距
-  const nodeHeight = maxY - minY + 100
-  const scaleX = width.value / nodeWidth
-  const scaleY = height.value / nodeHeight
-  const scale = Math.min(scaleX, scaleY, 1) // 不超过100%
-  
-  const centerX = (minX + maxX) / 2
-  const centerY = (minY + maxY) / 2
-  const translateX = width.value / 2 - centerX * scale
-  const translateY = height.value / 2 - centerY * scale
-  
-  // 应用变换
-  const transform = d3.zoomIdentity
-    .translate(translateX, translateY)
-    .scale(scale)
-  
   svg.transition()
     .duration(750)
-    .call(zoom.transform, transform)
+    .call(zoom.transform, d3.zoomIdentity)
 }
 
-const actualSize = () => {
-  displayMode.value = 'actual'
-  resetZoom()
+// 处理窗口大小变化
+function handleResize() {
+  if (!containerRef.value || !svg) return
+
+  const container = containerRef.value
+  const width = container.clientWidth
+  const height = container.clientHeight
+
+  svg.attr('width', width).attr('height', height)
 }
-
-// 节点hover处理
-const handleNodeMouseEnter = (event: MouseEvent, d: d3.HierarchyNode<ConversationTreeNode>) => {
-  // 清除之前的定时器
-  if (hoverTimer) {
-    clearTimeout(hoverTimer)
-  }
-  
-  // 1秒后显示tooltip
-  hoverTimer = window.setTimeout(() => {
-    const summary = d.data.summary || d.data.title || '无摘要'
-    tooltipContent.value = summary
-    
-    // 计算tooltip位置
-    const rect = (event.target as Element).getBoundingClientRect()
-    const containerRect = treeContainerRef.value?.getBoundingClientRect()
-    
-    if (containerRect) {
-      tooltipPosition.value = {
-        x: rect.left - containerRect.left + rect.width / 2,
-        y: rect.top - containerRect.top - 10
-      }
-    }
-    
-    showTooltip.value = true
-  }, 1000)
-}
-
-const handleNodeMouseLeave = () => {
-  // 清除定时器和隐藏tooltip
-  if (hoverTimer) {
-    clearTimeout(hoverTimer)
-    hoverTimer = null
-  }
-  showTooltip.value = false
-}
-
-// 缩放控制
-const zoomIn = () => {
-  svg.transition().duration(300).call(zoom.scaleBy, 1.5)
-}
-
-const zoomOut = () => {
-  svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.5)
-}
-
-const resetZoom = () => {
-  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity)
-}
-
-// 窗口大小调整
-const handleResize = () => {
-  if (!treeContainerRef.value) return
-  
-  const container = treeContainerRef.value
-  width.value = container.clientWidth
-  height.value = container.clientHeight
-  
-  svg.attr('width', width.value).attr('height', height.value)
-  tree.size([height.value - 100, width.value - 200])
-  
-  renderTree()
-}
-
-// 生命周期
-onMounted(() => {
-  nextTick(() => {
-    initD3()
-    renderTree()
-  })
-  
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
 </script>
 
 <style lang="less" scoped>
-.dialog-tree-visualization {
+.tree-visualization {
+  position: relative;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -503,128 +502,139 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color-light);
+  background-color: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  flex-shrink: 0;
 }
 
-.toolbar-left {
-  .current-session-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
+.color-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  
+  &.current {
+    background-color: var(--node-current);
+    border-color: var(--node-current);
   }
   
-  .legend {
-    margin-top: 8px;
-    display: flex;
-    gap: 16px;
-    
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    .legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: 2px solid #fff;
-      
-      &.current-dot {
-        background: #1890ff;
-        border-width: 3px;
-      }
-      
-      &.ancestor-dot {
-        background: #00b4d8;
-      }
-      
-      &.starred-dot {
-        background: #ff7f0e;
-      }
-      
-      &.other-dot {
-        background: #94a3b8;
-      }
-    }
+  &.ancestor {
+    background-color: var(--node-ancestor);
+    border-color: var(--node-ancestor);
+  }
+  
+  &.starred {
+    background-color: var(--node-starred);
+    border-color: var(--node-starred);
+  }
+  
+  &.default {
+    background-color: var(--node-default);
+    border-color: var(--node-default);
   }
 }
 
 .tree-container {
   flex: 1;
-  position: relative;
   overflow: hidden;
+  position: relative;
 }
 
 .tree-svg {
   width: 100%;
   height: 100%;
-  background: var(--bg-secondary);
+  background-color: #fafafa;
 }
 
-.empty-tree {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
+// D3节点样式
+:deep(.node) {
+  .node-circle {
+    fill: var(--node-default);
+    stroke: var(--node-default);
+    stroke-width: 2px;
+    transition: all 0.3s ease;
+    
+    &.current {
+      fill: var(--node-current);
+      stroke: var(--node-current);
+      stroke-width: 3px;
+    }
+    
+    &.ancestor {
+      fill: var(--node-ancestor);
+      stroke: var(--node-ancestor);
+      stroke-width: 3px;
+    }
+    
+    &.starred {
+      fill: var(--node-starred);
+      stroke: var(--node-starred);
+      stroke-width: 3px;
+    }
+    
+    &.user {
+      // 用户问题节点样式
+    }
+    
+    &.assistant {
+      // AI回答节点样式
+    }
+  }
+  
+  .text-background {
+    fill: rgba(255, 255, 255, 0.9);
+    stroke: #ddd;
+    stroke-width: 1px;
+  }
+  
+  .text-content {
+    fill: #333;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  &:hover {
+    .node-circle {
+      stroke-width: 4px;
+      filter: brightness(1.1);
+    }
+    
+    .text-background {
+      fill: rgba(255, 255, 255, 1);
+      stroke: #999;
+    }
+  }
 }
 
-.empty-hint {
-  margin-top: 8px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.node-tooltip {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.8);
+.tree-tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 12px;
-  max-width: 200px;
+  max-width: 300px;
   word-wrap: break-word;
-  z-index: 1000;
+  z-index: var(--z-tooltip);
   pointer-events: none;
-  transform: translateX(-50%);
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.8);
-  }
 }
 
-// D3.js样式
-:deep(.link) {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 2px;
+.empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
-
-:deep(.node) {
-  cursor: pointer;
-  
-  circle {
-    transition: all 0.2s;
-    
-    &:hover {
-      r: 10;
-      stroke-width: 3px;
-    }
-  }
-  
-  text {
-    font: 12px sans-serif;
-    pointer-events: none;
-  }
-}
-</style> 
+</style>

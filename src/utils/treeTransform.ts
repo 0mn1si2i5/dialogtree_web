@@ -1,200 +1,244 @@
 import type { DialogNode, ConversationTreeNode, Conversation } from '@/types'
 
 /**
- * 将后端返回的Dialog树转换为前端需要的Conversation树
- * 核心逻辑：同一dialog内的conversations按时间排序连成链，分叉点连接到子dialog
+ * 将后端Dialog树结构转换为前端Conversation树结构
+ * 
+ * 转换逻辑：
+ * 1. 每个dialog内的conversations按时间排序，形成线性链
+ * 2. 分叉点连接到子dialog的第一个conversation
+ * 3. 每个conversation展开为用户问题(user)和AI回答(assistant)两个节点
  */
 export function transformDialogTreeToConversationTree(
-  dialogNodes: DialogNode[]
+  dialogNodes: DialogNode[] | null
 ): ConversationTreeNode | null {
   if (!dialogNodes || dialogNodes.length === 0) {
     return null
   }
 
-  // 找到根dialog（parentId为null的第一个）
-  const rootDialog = dialogNodes.find(dialog => dialog.parentId === null)
-  if (!rootDialog) {
-    return null
-  }
-
-  // 构建dialog映射表，方便查找
-  const dialogMap = new Map<number, DialogNode>()
-  dialogNodes.forEach(dialog => {
-    dialogMap.set(dialog.dialogId, dialog)
-  })
-
-  /**
-   * 递归构建conversation树
-   * @param dialog 当前处理的dialog
-   * @param branchFromConversationId 分叉起始点的conversationId（如果有）
-   */
-  function buildConversationTree(
-    dialog: DialogNode,
-    branchFromConversationId?: number
-  ): ConversationTreeNode[] {
-    // 1. 将当前dialog的conversations按时间排序
+  // 递归转换每个dialog节点
+  function transformDialogNode(dialog: DialogNode): ConversationTreeNode[] {
+    const nodes: ConversationTreeNode[] = []
+    
+    // 按时间排序conversations
     const sortedConversations = [...dialog.conversations].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     )
 
-    if (sortedConversations.length === 0) {
-      return []
-    }
-
-    // 2. 为每个conversation创建节点
-    const conversationNodes: ConversationTreeNode[] = sortedConversations.map((conv, index) => ({
-      id: conv.id,
-      type: index % 2 === 0 ? 'user' : 'assistant', // 偶数索引为user，奇数为assistant
-      title: conv.title || '',
-      summary: conv.summary || '',
-      prompt: conv.prompt,
-      answer: conv.answer,
-      conversationId: conv.id,
-      dialogId: dialog.dialogId,
-      isStarred: conv.isStarred,
-      comment: conv.comment || '',
-      createdAt: conv.createdAt,
-      children: []
-    }))
-
-    // 3. 将conversation连成链（父子关系）
-    for (let i = 0; i < conversationNodes.length - 1; i++) {
-      conversationNodes[i].children.push(conversationNodes[i + 1])
-    }
-
-    // 4. 处理子dialog的分叉逻辑
-    if (dialog.children && dialog.children.length > 0) {
-      // 找到最后一个conversation作为分叉点
-      const lastConversationNode = conversationNodes[conversationNodes.length - 1]
+    for (let i = 0; i < sortedConversations.length; i++) {
+      const conv = sortedConversations[i]
       
-      if (lastConversationNode) {
-        // 为每个子dialog创建分支
-        dialog.children.forEach(childDialog => {
-          const childConversations = buildConversationTree(childDialog)
-          if (childConversations.length > 0) {
-            // 将子dialog的第一个conversation连接到分叉点
-            lastConversationNode.children.push(childConversations[0])
+      // 创建用户问题节点
+      const userNode: ConversationTreeNode = {
+        id: conv.id * 2, // 用偶数ID表示用户消息
+        type: 'user',
+        content: conv.prompt,
+        conversationId: conv.id,
+        dialogId: conv.dialogID,
+        title: conv.title,
+        summary: conv.summary,
+        isStarred: conv.isStarred,
+        comment: conv.comment,
+        createdAt: conv.createdAt,
+        children: [],
+      }
+
+      // 创建AI回答节点
+      const assistantNode: ConversationTreeNode = {
+        id: conv.id * 2 + 1, // 用奇数ID表示AI消息
+        type: 'assistant',
+        content: conv.answer,
+        conversationId: conv.id,
+        dialogId: conv.dialogID,
+        title: conv.title,
+        summary: conv.summary,
+        isStarred: conv.isStarred,
+        comment: conv.comment,
+        createdAt: conv.createdAt,
+        children: [],
+      }
+
+      // 建立父子关系
+      if (i === 0) {
+        // 第一个conversation
+        userNode.children.push(assistantNode)
+        nodes.push(userNode)
+      } else {
+        // 后续conversations连接到前一个assistant节点
+        const prevAssistantNode = nodes[nodes.length - 1]
+        userNode.children.push(assistantNode)
+        prevAssistantNode.children.push(userNode)
+        nodes.push(userNode)
+      }
+
+      // 如果是最后一个conversation且有子dialog，连接分叉
+      if (i === sortedConversations.length - 1 && dialog.children.length > 0) {
+        for (const childDialog of dialog.children) {
+          const childNodes = transformDialogNode(childDialog)
+          if (childNodes.length > 0) {
+            assistantNode.children.push(...childNodes)
           }
-        })
+        }
       }
     }
 
-    return conversationNodes
+    return nodes
   }
 
-  // 从根dialog开始构建树
-  const rootConversations = buildConversationTree(rootDialog)
+  // 转换根dialog（通常是第一个）
+  const rootNodes = transformDialogNode(dialogNodes[0])
   
-  // 返回第一个conversation作为树的根节点
-  return rootConversations.length > 0 ? rootConversations[0] : null
+  // 返回根节点（第一个用户问题节点）
+  return rootNodes.length > 0 ? rootNodes[0] : null
 }
 
 /**
- * 从conversation树中提取线性对话历史
- * 用于ChatPanel显示当前对话路径
+ * 从对话树中提取聊天历史记录
+ * 根据选中的conversation ID，提取从根节点到该节点的完整路径
  */
 export function extractChatHistoryFromConversationTree(
-  rootNode: ConversationTreeNode | null,
-  targetConversationId?: number
-): Array<{
-  id: number
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: string
-  isStarred: boolean
-  comment?: string
-  conversationId: number
-}> {
-  if (!rootNode) return []
+  conversationTree: ConversationTreeNode | null,
+  targetConversationId: number
+): ConversationTreeNode[] {
+  if (!conversationTree) return []
 
-  const chatHistory: Array<{
-    id: number
-    role: 'user' | 'assistant'
-    content: string
-    timestamp: string
-    isStarred: boolean
-    comment?: string
-    conversationId: number
-  }> = []
+  const path: ConversationTreeNode[] = []
 
-  /**
-   * 深度优先搜索，找到目标conversation的路径
-   * 如果没有指定目标，则返回最长路径（最新的对话）
-   */
-  function findConversationPath(
-    node: ConversationTreeNode,
-    currentPath: ConversationTreeNode[],
-    targetId?: number
-  ): ConversationTreeNode[] | null {
-    currentPath.push(node)
+  function findPath(node: ConversationTreeNode): boolean {
+    path.push(node)
 
-    // 如果找到目标，返回当前路径
-    if (targetId && node.conversationId === targetId) {
-      return [...currentPath]
-    }
-
-    // 如果没有子节点
-    if (!node.children || node.children.length === 0) {
-      // 如果没有指定目标，返回当前路径（叶子节点路径）
-      if (!targetId) {
-        return [...currentPath]
-      }
-      currentPath.pop()
-      return null
+    // 找到目标节点
+    if (node.conversationId === targetConversationId) {
+      return true
     }
 
     // 递归搜索子节点
     for (const child of node.children) {
-      const result = findConversationPath(child, currentPath, targetId)
-      if (result) {
-        return result
+      if (findPath(child)) {
+        return true
       }
     }
 
-    currentPath.pop()
-    return null
+    // 回溯：如果当前路径不通向目标，移除当前节点
+    path.pop()
+    return false
   }
 
-  // 找到对话路径
-  const conversationPath = findConversationPath(rootNode, [], targetConversationId)
-  
-  if (conversationPath) {
-    // 转换为ChatPanel需要的格式
-    conversationPath.forEach(node => {
-      chatHistory.push({
-        id: node.conversationId,
-        role: node.type,
-        content: node.type === 'user' ? (node.prompt || node.title) : (node.answer || node.title),
-        timestamp: node.createdAt,
-        isStarred: node.isStarred,
-        comment: node.comment,
-        conversationId: node.conversationId
-      })
-    })
-  }
-
-  return chatHistory
+  findPath(conversationTree)
+  return path
 }
 
 /**
- * 根据conversationId找到对应的conversation节点
+ * 从祖先API数据构建聊天历史
+ * 这是第一轮开发中缺失的重要功能
  */
-export function findConversationNodeById(
-  rootNode: ConversationTreeNode | null,
-  conversationId: number
-): ConversationTreeNode | null {
-  if (!rootNode) return null
+export function buildChatHistoryFromAncestors(
+  ancestors: Conversation[],
+  currentConversation?: Conversation
+): ConversationTreeNode[] {
+  const history: ConversationTreeNode[] = []
+  
+  // 处理祖先节点
+  for (const conv of ancestors) {
+    if (conv.prompt && conv.prompt.trim()) {
+      history.push({
+        id: conv.id * 2,
+        type: 'user',
+        content: conv.prompt,
+        conversationId: conv.id,
+        dialogId: conv.dialogID,
+        title: conv.title,
+        summary: conv.summary,
+        isStarred: conv.isStarred,
+        comment: conv.comment,
+        createdAt: conv.createdAt,
+        children: [],
+      })
+    }
 
-  if (rootNode.conversationId === conversationId) {
-    return rootNode
-  }
-
-  if (rootNode.children) {
-    for (const child of rootNode.children) {
-      const found = findConversationNodeById(child, conversationId)
-      if (found) return found
+    if (conv.answer && conv.answer.trim()) {
+      history.push({
+        id: conv.id * 2 + 1,
+        type: 'assistant',
+        content: conv.answer,
+        conversationId: conv.id,
+        dialogId: conv.dialogID,
+        title: conv.title,
+        summary: conv.summary,
+        isStarred: conv.isStarred,
+        comment: conv.comment,
+        createdAt: conv.createdAt,
+        children: [],
+      })
     }
   }
 
-  return null
-} 
+  // 如果提供了当前conversation且不在ancestors中，添加它
+  if (currentConversation && !ancestors.find(a => a.id === currentConversation.id)) {
+    if (currentConversation.prompt && currentConversation.prompt.trim()) {
+      history.push({
+        id: currentConversation.id * 2,
+        type: 'user',
+        content: currentConversation.prompt,
+        conversationId: currentConversation.id,
+        dialogId: currentConversation.dialogID,
+        title: currentConversation.title,
+        summary: currentConversation.summary,
+        isStarred: currentConversation.isStarred,
+        comment: currentConversation.comment,
+        createdAt: currentConversation.createdAt,
+        children: [],
+      })
+    }
+
+    if (currentConversation.answer && currentConversation.answer.trim()) {
+      history.push({
+        id: currentConversation.id * 2 + 1,
+        type: 'assistant',
+        content: currentConversation.answer,
+        conversationId: currentConversation.id,
+        dialogId: currentConversation.dialogID,
+        title: currentConversation.title,
+        summary: currentConversation.summary,
+        isStarred: currentConversation.isStarred,
+        comment: currentConversation.comment,
+        createdAt: currentConversation.createdAt,
+        children: [],
+      })
+    }
+  }
+
+  return history
+}
+
+/**
+ * 获取节点的所有祖先节点ID
+ * 用于高亮显示祖先路径
+ */
+export function getAncestorNodeIds(
+  conversationTree: ConversationTreeNode | null,
+  targetConversationId: number
+): number[] {
+  const path = extractChatHistoryFromConversationTree(conversationTree, targetConversationId)
+  return path.map(node => node.conversationId).filter((id, index, arr) => arr.indexOf(id) === index)
+}
+
+/**
+ * 获取所有收藏的节点ID
+ */
+export function getStarredNodeIds(conversationTree: ConversationTreeNode | null): number[] {
+  if (!conversationTree) return []
+
+  const starredIds: number[] = []
+
+  function traverse(node: ConversationTreeNode) {
+    if (node.isStarred) {
+      starredIds.push(node.conversationId)
+    }
+    for (const child of node.children) {
+      traverse(child)
+    }
+  }
+
+  traverse(conversationTree)
+  return Array.from(new Set(starredIds)) // 去重
+}

@@ -1,55 +1,112 @@
-import { api, createSSEConnection } from './index'
-import type { 
-  ApiResponse, 
-  CreateDialogRequest,
-  UpdateCommentRequest,
-  DialogTreeData
-} from '@/types'
+import http from './http'
+import type { ApiResponse, Conversation, CreateDialogRequest, SSEMessage } from '@/types'
+
+// ===== 对话相关API =====
 
 export const dialogApi = {
-  // 获取对话树
-  getDialogTree(sessionId: number): Promise<ApiResponse<DialogTreeData>> {
-    return api.get(`/sessions/${sessionId}/tree`)
-  },
-
-  // 创建新对话 (流式响应)
-  createDialog(
+  // 创建新对话 (SSE流式响应)
+  async createDialog(
     data: CreateDialogRequest,
     onMessage: (content: string) => void,
-    onComplete: () => void,
-    onError: (error: Error) => void
-  ): void {
-    createSSEConnection(
-      '/api/dialog/chat',
-      data,
-      onMessage,
-      onComplete,
-      onError
-    )
+    onComplete: (result: { dialogId: number; conversationId: number }) => void,
+    onError: (error: string) => void
+  ): Promise<void> {
+    try {
+      const response = await fetch('/api/dialog/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('无法获取响应流')
+      }
+
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        
+        // 保留最后一行可能不完整的数据
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('event:message')) continue
+          
+          if (line.startsWith('data:')) {
+            const content = line.substring(5).trim()
+            
+            if (content === '') continue
+            
+            try {
+              // 尝试解析JSON结构的完成数据
+              const parsed = JSON.parse(content) as SSEMessage
+              if (parsed.type === 'done' && parsed.data) {
+                onComplete(parsed.data)
+                return
+              }
+            } catch {
+              // 如果不是JSON，则是普通消息内容
+              onMessage(content)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('SSE Error:', error)
+      onError(error instanceof Error ? error.message : '流式响应错误')
+    }
   },
 
-  // 创建新对话 (同步响应，用于测试)
-  createDialogSync(data: CreateDialogRequest): Promise<ApiResponse> {
-    return api.post('/dialog/chat-sync', data)
+  // 创建新对话 (同步版本，用于测试)
+  async createDialogSync(data: CreateDialogRequest): Promise<{
+    dialogId: number
+    conversationId: number
+    title: string
+    summary: string
+  }> {
+    const response = await http.post<ApiResponse<{
+      dialogId: number
+      conversationId: number
+      title: string
+      summary: string
+    }>>('/dialog/chat-sync', data)
+    return response.data.data
   },
 
   // 标星/取消标星对话
-  starConversation(conversationId: number): Promise<ApiResponse<{ isStarred: boolean }>> {
-    return api.put(`/dialog/conversations/${conversationId}/star`)
+  async toggleStar(conversationId: number): Promise<{ isStarred: boolean }> {
+    const response = await http.put<ApiResponse<{ isStarred: boolean }>>(`/dialog/conversations/${conversationId}/star`)
+    return response.data.data
   },
 
   // 更新对话评论
-  updateComment(data: UpdateCommentRequest): Promise<ApiResponse> {
-    return api.put('/dialog/conversations/comment', data)
+  async updateComment(data: { id: number; comment: string }): Promise<void> {
+    await http.put('/dialog/conversations/comment', data)
   },
 
   // 删除对话评论
-  deleteComment(conversationId: number): Promise<ApiResponse> {
-    return api.delete(`/dialog/conversations/${conversationId}`)
+  async deleteComment(conversationId: number): Promise<void> {
+    await http.delete(`/dialog/conversations/${conversationId}`)
   },
 
-  // 获取对话的祖先节点
-  getConversationAncestors(conversationId: number): Promise<ApiResponse> {
-    return api.get(`/api/dialog/conversations/${conversationId}/ancestors`)
-  }
-} 
+  // 获取祖先对话链
+  async getAncestors(conversationId: number): Promise<Conversation[]> {
+    const response = await http.get<ApiResponse<Conversation[]>>(`/dialog/conversations/${conversationId}/ancestors`)
+    return response.data.data
+  },
+}

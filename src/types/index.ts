@@ -1,21 +1,5 @@
-// 基础接口定义
+// ===== 基础数据类型 =====
 
-// API响应基础结构
-export interface ApiResponse<T = any> {
-  code: number
-  data: T
-  msg: string
-}
-
-// 分类 Category
-export interface Category {
-  id: number
-  name: string
-  createdAt: string
-  updatedAt: string
-}
-
-// 会话 Session  
 export interface Session {
   id: number
   title: string
@@ -25,43 +9,28 @@ export interface Session {
   updatedAt: string
 }
 
-// 对话 Conversation
+export interface Category {
+  id: number
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Conversation {
   id: number
+  title: string
+  summary: string
   prompt: string
   answer: string
-  title?: string
-  summary?: string
   isStarred: boolean
   comment: string
   createdAt: string
-  dialogId?: number
-  parentConversationId?: number
+  sessionID: number
+  dialogID: number
 }
 
-// Dialog 分支
-export interface Dialog {
-  id: number
-  sessionId: number
-  parentId: number | null
-  conversations: Conversation[]
-  createdAt: string
-}
+// ===== Dialog树相关类型 =====
 
-// 对话树节点 (用于D3.js可视化)
-export interface DialogTreeNode {
-  id: number
-  title?: string
-  content?: string
-  type: 'user' | 'assistant' | 'root'
-  conversationId?: number
-  dialogId?: number
-  children?: DialogTreeNode[]
-  x?: number
-  y?: number
-}
-
-// 后端返回的Dialog结构
 export interface DialogNode {
   dialogId: number
   parentId: number | null
@@ -69,97 +38,87 @@ export interface DialogNode {
   children: DialogNode[]
 }
 
-// 对话树数据结构 (后端API返回格式)
 export interface DialogTreeData {
   sessionId: number
   sessionInfo: Session
-  dialogTree: DialogNode[] // 修正：后端返回的是数组
+  dialogTree: DialogNode[] | null
 }
 
-// 转换后的Conversation树节点 (用于D3.js可视化)
+// ===== 前端转换后的Conversation树类型 =====
+
 export interface ConversationTreeNode {
-  id: number // conversation.id
+  id: number
   type: 'user' | 'assistant'
-  title: string
-  summary: string
-  prompt?: string
-  answer?: string
+  content: string
   conversationId: number
   dialogId: number
+  title: string
+  summary: string
   isStarred: boolean
   comment: string
   createdAt: string
   children: ConversationTreeNode[]
+  parentId?: number
 }
 
-// 创建会话的请求参数
-export interface CreateSessionRequest {
-  title: string
-  categoryID: number
+// ===== API响应类型 =====
+
+export interface ApiResponse<T = any> {
+  code: number
+  data: T
+  msg: string
 }
 
-// 创建对话的请求参数
+// ===== SSE相关类型 =====
+
+export interface SSEMessage {
+  type: 'message' | 'done' | 'error'
+  content?: string
+  data?: {
+    dialogId: number
+    conversationId: number
+  }
+}
+
+// ===== Chat相关类型 =====
+
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  conversationId?: number
+  isStarred?: boolean
+  comment?: string
+}
+
 export interface CreateDialogRequest {
   content: string
   sessionId: number
   parentConversationId?: number
 }
 
-// SSE事件类型
-export interface SSEEvent {
-  type: 'message' | 'done' | 'error'
-  content?: string
-  data?: any
+// ===== UI状态类型 =====
+
+export type PanelMode = 'hidden' | 'normal' | 'expanded'
+
+export interface LayoutState {
+  sidebarVisible: boolean
+  chatPanelMode: PanelMode
 }
 
-// 评论更新请求
-export interface UpdateCommentRequest {
-  id: number
-  comment: string
+// ===== 组件Props类型 =====
+
+export interface TreeVisualizationProps {
+  conversationTree: ConversationTreeNode | null
+  selectedNodeId: number | null
+  ancestorNodeIds: number[]
+  starredNodeIds: number[]
 }
 
-// 分类创建请求
-export interface CreateCategoryRequest {
-  name: string
-}
-
-// 分类更新请求  
-export interface UpdateCategoryRequest {
-  id: number
-  name: string
-}
-
-// 分页响应数据
-export interface PaginatedResponse<T> {
-  count: number
-  list: T[]
-}
-
-// 用户状态
-export interface UserState {
-  isAuthenticated: boolean
-  username?: string
-}
-
-// 应用状态
-export interface AppState {
-  loading: boolean
-  error: string | null
-  theme: 'light' | 'dark'
-}
-
-// 聊天状态
-export interface ChatState {
+export interface ChatPanelProps {
+  panelMode: PanelMode
+  messages: ChatMessage[]
   isStreaming: boolean
   streamingContent: string
-  currentInput: string
 }
-
-// 缩放配置
-export interface ZoomConfig {
-  scale: number
-  translateX: number
-  translateY: number
-  minScale: number
-  maxScale: number
-} 

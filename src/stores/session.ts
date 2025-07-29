@@ -1,122 +1,217 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Session, Category, CreateSessionRequest, ApiResponse } from '@/types'
-import { sessionApi } from '@/api/session'
+import { sessionApi, categoryApi } from '@/api'
+import type { Session, Category } from '@/types'
 
 export const useSessionStore = defineStore('session', () => {
-  // 状态
+  // ===== 状态 =====
   const sessions = ref<Session[]>([])
   const categories = ref<Category[]>([])
   const currentSessionId = ref<number | null>(null)
+  const selectedCategoryId = ref<number | null>(null)
   const loading = ref(false)
+  const error = ref<string>('')
 
-  // 计算属性
-  const currentSession = computed(() => {
-    if (!currentSessionId.value) return null
-    return sessions.value.find(session => session.id === currentSessionId.value) || null
+  // ===== 计算属性 =====
+  const currentSession = computed(() => 
+    sessions.value.find(s => s.id === currentSessionId.value) || null
+  )
+
+  const filteredSessions = computed(() => {
+    if (selectedCategoryId.value === null) {
+      return sessions.value
+    }
+    return sessions.value.filter(s => s.categoryID === selectedCategoryId.value)
   })
 
-  const sessionsByCategory = computed(() => {
-    const grouped: Record<number, Session[]> = {}
-    sessions.value.forEach(session => {
-      if (!grouped[session.categoryID]) {
-        grouped[session.categoryID] = []
-      }
-      grouped[session.categoryID].push(session)
-    })
-    return grouped
-  })
+  const currentCategory = computed(() =>
+    categories.value.find(c => c.id === selectedCategoryId.value) || null
+  )
 
-  // 方法
-  const fetchSessions = async (): Promise<void> => {
-    loading.value = true
+  // ===== Actions =====
+
+  // 获取所有会话
+  async function fetchSessions() {
     try {
-      const response = await sessionApi.getSessions()
-      if (response.code === 0) {
-        sessions.value = response.data || []
-      }
-    } catch (error) {
-      console.error('获取会话列表失败:', error)
-      throw error
+      loading.value = true
+      error.value = ''
+      sessions.value = await sessionApi.getSessions()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取会话列表失败'
+      console.error('Failed to fetch sessions:', err)
     } finally {
       loading.value = false
     }
   }
 
-  const fetchCategories = async (): Promise<void> => {
+  // 获取所有分类
+  async function fetchCategories() {
     try {
-      const response = await sessionApi.getCategories()
-      if (response.code === 0) {
-        categories.value = response.data?.list || []
-      }
-    } catch (error) {
-      console.error('获取分类列表失败:', error)
-      throw error
+      loading.value = true
+      error.value = ''
+      const result = await categoryApi.getCategories()
+      categories.value = result.list
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取分类列表失败'
+      console.error('Failed to fetch categories:', err)
+    } finally {
+      loading.value = false
     }
   }
 
-  const createSession = async (request: CreateSessionRequest): Promise<Session | null> => {
+  // 创建新会话
+  async function createSession(title: string, categoryID: number) {
     try {
-      const response = await sessionApi.createSession(request)
-      if (response.code === 0) {
-        const newSession: Session = {
-          id: response.data.sessionId,
-          title: response.data.title,
-          summary: '',
-          categoryID: request.categoryID,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-        sessions.value.unshift(newSession)
-        setCurrentSession(newSession.id)
-        return newSession
-      }
-      return null
-    } catch (error) {
-      console.error('创建会话失败:', error)
-      throw error
+      loading.value = true
+      error.value = ''
+      const result = await sessionApi.createSession({ title, categoryID })
+      
+      // 重新获取会话列表以更新状态
+      await fetchSessions()
+      
+      // 自动选中新创建的会话
+      currentSessionId.value = result.sessionId
+      
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '创建会话失败'
+      console.error('Failed to create session:', err)
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
-  const deleteSession = async (sessionId: number): Promise<void> => {
+  // 删除会话
+  async function deleteSession(sessionId: number) {
     try {
-      const response = await sessionApi.deleteSession(sessionId)
-      if (response.code === 0) {
-        sessions.value = sessions.value.filter(session => session.id !== sessionId)
-        if (currentSessionId.value === sessionId) {
-          currentSessionId.value = null
-        }
+      loading.value = true
+      error.value = ''
+      await sessionApi.deleteSession(sessionId)
+      
+      // 如果删除的是当前选中的会话，清除选中状态
+      if (currentSessionId.value === sessionId) {
+        currentSessionId.value = null
       }
-    } catch (error) {
-      console.error('删除会话失败:', error)
-      throw error
+      
+      // 重新获取会话列表
+      await fetchSessions()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除会话失败'
+      console.error('Failed to delete session:', err)
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
-  const setCurrentSession = (sessionId: number | null): void => {
+  // 根据分类获取会话
+  async function fetchSessionsByCategory(categoryId: number) {
+    try {
+      loading.value = true
+      error.value = ''
+      const result = await sessionApi.getSessionsByCategory(categoryId)
+      
+      // 更新相应分类的会话数据
+      const categorySessionIds = new Set(result.sessions.map(s => s.id))
+      
+      // 移除其他分类的会话，添加当前分类的会话
+      sessions.value = sessions.value.filter(s => s.categoryID !== categoryId)
+      sessions.value.push(...result.sessions)
+      
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取分类会话失败'
+      console.error('Failed to fetch sessions by category:', err)
+      
+      // 降级处理：使用客户端过滤
+      return {
+        categoryId,
+        categoryName: currentCategory.value?.name || '未知分类',
+        sessions: sessions.value.filter(s => s.categoryID === categoryId)
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 创建新分类
+  async function createCategory(name: string) {
+    try {
+      loading.value = true
+      error.value = ''
+      await categoryApi.createCategory({ name })
+      await fetchCategories()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '创建分类失败'
+      console.error('Failed to create category:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 更新分类
+  async function updateCategory(id: number, name: string) {
+    try {
+      loading.value = true
+      error.value = ''
+      await categoryApi.updateCategory({ id, name })
+      await fetchCategories()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '更新分类失败'
+      console.error('Failed to update category:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 删除分类
+  async function deleteCategory(categoryId: number) {
+    try {
+      loading.value = true
+      error.value = ''
+      await categoryApi.deleteCategory(categoryId)
+      
+      // 如果删除的是当前选中的分类，清除选中状态
+      if (selectedCategoryId.value === categoryId) {
+        selectedCategoryId.value = null
+      }
+      
+      await fetchCategories()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除分类失败'
+      console.error('Failed to delete category:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ===== 辅助方法 =====
+
+  // 设置当前会话
+  function setCurrentSession(sessionId: number | null) {
     currentSessionId.value = sessionId
   }
 
-  const updateSessionTitle = (sessionId: number, title: string): void => {
-    const session = sessions.value.find(s => s.id === sessionId)
-    if (session) {
-      session.title = title
-    }
+  // 设置选中的分类
+  function setSelectedCategory(categoryId: number | null) {
+    selectedCategoryId.value = categoryId
   }
 
-  const updateSessionSummary = (sessionId: number, summary: string): void => {
-    const session = sessions.value.find(s => s.id === sessionId)
-    if (session) {
-      session.summary = summary
-    }
+  // 清除错误状态
+  function clearError() {
+    error.value = ''
   }
 
-  // 清理状态
-  const reset = (): void => {
-    sessions.value = []
-    categories.value = []
-    currentSessionId.value = null
-    loading.value = false
+  // 初始化数据
+  async function initialize() {
+    await Promise.all([
+      fetchSessions(),
+      fetchCategories()
+    ])
   }
 
   return {
@@ -124,20 +219,27 @@ export const useSessionStore = defineStore('session', () => {
     sessions,
     categories,
     currentSessionId,
+    selectedCategoryId,
     loading,
+    error,
     
     // 计算属性
     currentSession,
-    sessionsByCategory,
+    filteredSessions,
+    currentCategory,
     
-    // 方法
+    // Actions
     fetchSessions,
     fetchCategories,
     createSession,
     deleteSession,
+    fetchSessionsByCategory,
+    createCategory,
+    updateCategory,
+    deleteCategory,
     setCurrentSession,
-    updateSessionTitle,
-    updateSessionSummary,
-    reset
+    setSelectedCategory,
+    clearError,
+    initialize,
   }
-}) 
+})
