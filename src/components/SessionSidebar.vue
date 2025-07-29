@@ -100,16 +100,6 @@
 
     <!-- 分类管理标签页 -->
     <div v-if="activeTab === 'categories'" class="tab-content">
-      <div class="category-actions">
-        <a-button 
-          type="primary" 
-          size="small" 
-          @click="showCreateCategoryModal = true"
-        >
-          新建分类
-        </a-button>
-      </div>
-
       <div class="category-list">
         <a-spin :loading="sessionStore.loading">
           <div 
@@ -142,6 +132,18 @@
             description="暂无分类"
           />
         </a-spin>
+      </div>
+      
+      <!-- 底部新建分类按钮 -->
+      <div class="category-footer">
+        <a-button 
+          type="primary" 
+          size="medium"
+          block
+          @click="showCreateCategoryModal = true"
+        >
+          新建分类
+        </a-button>
       </div>
     </div>
 
@@ -703,13 +705,7 @@ function resetRenameCategoryForm() {
   //margin-top: 8px; // 与标签页之间增加间距
 }
 
-.category-actions {
-  padding: 16px 16px; // 统一间距
-  border-bottom: 1px solid #f0f0f0;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 8px; // 与标签页之间增加间距
-}
+// category-actions 已移除，新建分类按钮已移至底部
 
 .session-list,
 .category-list {
@@ -757,7 +753,18 @@ function resetRenameCategoryForm() {
   }
 }
 
-.session-footer {
+.session-footer,
+.category-footer {
+  padding: 16px 16px 16px 16px; // 统一内边距，确保与左右边界相等
+  border-top: 1px solid #f0f0f0;
+  background-color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
   .arco-btn {
     width: 100%;
   }
