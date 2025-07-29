@@ -270,6 +270,7 @@ onMounted(async () => {
   cursor: pointer;
   color: #666;
   opacity: 0.3;
+  z-index: 900; // 低于左边栏恢复按钮(1000)，确保左边栏按钮优先
   transition: all 0.3s ease;
   
   &:hover {
@@ -286,9 +287,9 @@ onMounted(async () => {
   }
 }
 
-// 展开模式下的布局调整
-.layout-container:has(.chat-area[data-mode="expanded"]) {
-  grid-template-areas: "chat";
-  grid-template-columns: 1fr;
-}
+// 展开模式下的布局调整（已移除，现在由CSS变量动态控制）
+// .layout-container:has(.chat-area[data-mode="expanded"]) {
+//   grid-template-areas: "chat";
+//   grid-template-columns: 1fr;
+// }
 </style>

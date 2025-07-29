@@ -34,7 +34,14 @@ export const useLayoutStore = defineStore('layout', () => {
       case 'normal':
         return 'var(--chat-panel-normal)'
       case 'expanded':
-        return 'var(--chat-panel-expanded)'
+        // 根据左边栏状态动态计算展开宽度
+        if (sidebarVisible.value) {
+          // 左边栏显示时，右边栏扩展到与左边栏齐平（100% - 280px）
+          return 'calc(100% - 280px)'
+        } else {
+          // 左边栏隐藏时，右边栏占满全屏（100%）
+          return '100%'
+        }
       default:
         return 'var(--chat-panel-normal)'
     }

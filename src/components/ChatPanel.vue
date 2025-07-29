@@ -425,6 +425,25 @@ function toggleMaximize() {
   }
 }
 
+// 全屏模式下增加对话框的最大宽度，优化头像位置
+.chat-panel[data-mode="expanded"] {
+  .message-list {
+    padding: 0 8px; // 减少左右内边距，从16px减到8px
+  }
+  
+  .message-item {
+    gap: 8px; // 减少头像和消息的间距，从12px减到8px
+    
+    &.user-message .message-content {
+      max-width: 80%;
+    }
+    
+    &.assistant-message .message-content {
+      max-width: 90%;
+    }
+  }
+}
+
 .message-avatar {
   flex-shrink: 0;
   width: 32px;
@@ -533,7 +552,7 @@ function toggleMaximize() {
 .chat-panel[data-mode="expanded"] {
   .chat-messages {
     .message-list {
-      max-width: calc(100vw - 200px);
+      max-width: calc(100vw - 40px); // todo
       margin: 0 auto;
     }
   }
