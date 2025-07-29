@@ -1,10 +1,20 @@
 <template>
   <div class="session-sidebar">
-    <!-- 顶部工具栏 -->
+    <!-- 项目Logo区域 -->
+    <div class="logo-header">
+      <div class="logo-content">
+        <div class="logo-icon">🌳</div>
+        <span class="logo-text">DialogTree</span>
+      </div>
+    </div>
+    
+    <!-- 标签页工具栏 -->
     <div class="sidebar-header">
       <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs">
-        <a-tab-pane key="sessions" title="会话列表" />
-        <a-tab-pane key="categories" title="分类管理" />
+        <div class="tabs">
+          <a-tab-pane key="sessions" title="会话列表" />
+          <a-tab-pane key="categories" title="分类管理" />
+        </div>
       </a-tabs>
     </div>
 
@@ -28,14 +38,6 @@
             {{ category.name }}
           </a-option>
         </a-select>
-        
-        <a-button 
-          type="primary" 
-          size="small" 
-          @click="showCreateSessionModal = true"
-        >
-          新建会话
-        </a-button>
       </div>
 
       <!-- 会话列表 -->
@@ -81,6 +83,18 @@
             description="暂无会话"
           />
         </a-spin>
+      </div>
+      
+      <!-- 底部新建会话按钮 -->
+      <div class="session-footer">
+        <a-button 
+          type="primary" 
+          size="medium"
+          block
+          @click="showCreateSessionModal = true"
+        >
+          新建会话
+        </a-button>
       </div>
     </div>
 
@@ -598,22 +612,77 @@ function resetRenameCategoryForm() {
   box-sizing: border-box;
 }
 
+.logo-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px; // 与右侧工具栏一致
+  border-bottom: 1px solid #e5e5e5;
+  background-color: #fff;
+  flex-shrink: 0;
+  min-height: 48px; // 与右侧工具栏高度匹配
+}
+
+.logo-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1890ff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
+  //border-bottom: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
+  min-height: 48px; // 与右侧工具栏高度匹配
+
+  .arco-tabs-content {
+    padding-top: 0 !important;
+  }
 }
 
 .sidebar-tabs {
   flex: 0 0 auto;
   width: 100%;
+
+  .tabs {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    background-color: red;
+
+    .arco-tabs-nav-tab {
+      display: flex;
+      justify-content: center;
+      background-color: red;
+    }
+  }
 }
+
+//// 让tabs标签内容居中
+//:deep(.sidebar-tabs .arco-tabs-nav) {
+//  justify-content: center;
+//}
+//
+//:deep(.sidebar-tabs .arco-tabs-nav-tab-list) {
+//  justify-content: center;
+//}
 
 .tab-content {
   flex: 1;
@@ -625,20 +694,21 @@ function resetRenameCategoryForm() {
 }
 
 .category-filter {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 0 16px; // 增加上下间距
+  padding-bottom: 8px;
+  //border-bottom: 1px solid #f0f0f0;
   width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
+  //margin-top: 8px; // 与标签页之间增加间距
 }
 
 .category-actions {
-  padding: 12px 16px;
+  padding: 16px 16px; // 统一间距
   border-bottom: 1px solid #f0f0f0;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 8px; // 与标签页之间增加间距
 }
 
 .session-list,
@@ -649,6 +719,18 @@ function resetRenameCategoryForm() {
   padding: 8px 0;
   width: 100%;
   box-sizing: border-box;
+}
+
+.session-footer {
+  padding: 16px 16px 16px 16px; // 统一内边距，确保与左右边界相等
+  border-top: 1px solid #f0f0f0;
+  background-color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .session-item,
@@ -672,6 +754,12 @@ function resetRenameCategoryForm() {
   &.active {
     background-color: #e6f7ff;
     border-right: 3px solid #1890ff;
+  }
+}
+
+.session-footer {
+  .arco-btn {
+    width: 100%;
   }
 }
 
