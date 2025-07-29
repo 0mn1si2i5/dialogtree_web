@@ -2,11 +2,10 @@
   <div class="session-sidebar">
     <!-- 顶部工具栏 -->
     <div class="sidebar-header">
-      <a-tabs v-model:active-key="activeTab" size="small">
+      <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs">
         <a-tab-pane key="sessions" title="会话列表" />
         <a-tab-pane key="categories" title="分类管理" />
       </a-tabs>
-      
     </div>
 
     <!-- 会话列表标签页 -->
@@ -400,8 +399,15 @@ function resetCreateCategoryForm() {
 .sidebar-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 12px 16px;
   border-bottom: 1px solid #e5e5e5;
+  background-color: #fff;
+  flex-shrink: 0;
+}
+
+.sidebar-tabs {
+  flex: 0 0 auto;
 }
 
 .tab-content {

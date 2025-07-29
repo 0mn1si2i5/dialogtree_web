@@ -361,7 +361,7 @@ function toggleMaximize() {
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid #e5e5e5;
-  background-color: #fafafa;
+  background-color: #fff;
   flex-shrink: 0;
 }
 
@@ -542,13 +542,7 @@ function toggleMaximize() {
 // 隐藏模式样式
 .chat-panel[data-mode="hidden"] {
   .chat-header {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    padding: 16px 8px;
-    
-    .header-title {
-      display: none;
-    }
+    display: none;
   }
   
   .chat-messages,
