@@ -7,18 +7,6 @@
         <a-tab-pane key="categories" title="分类管理" />
       </a-tabs>
       
-      <div class="header-actions">
-        <a-button 
-          type="text" 
-          size="small" 
-          @click="toggleSidebar"
-          :title="'隐藏侧边栏'"
-        >
-          <template #icon>
-            <icon-left />
-          </template>
-        </a-button>
-      </div>
     </div>
 
     <!-- 会话列表标签页 -->
@@ -198,7 +186,6 @@ import { ref, computed, watch } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
 import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
 import { 
-  IconLeft, 
   IconMore 
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
@@ -400,10 +387,6 @@ function resetCreateCategoryForm() {
   }
 }
 
-// 切换侧边栏
-function toggleSidebar() {
-  layoutStore.toggleSidebar()
-}
 </script>
 
 <style lang="less" scoped>
@@ -417,14 +400,8 @@ function toggleSidebar() {
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid #e5e5e5;
-  
-  .header-actions {
-    display: flex;
-    gap: 8px;
-  }
 }
 
 .tab-content {

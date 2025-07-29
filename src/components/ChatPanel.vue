@@ -21,19 +21,6 @@
             <icon-fullscreen-exit v-else />
           </template>
         </a-button>
-        
-        <!-- 按钮 b: 隐藏/恢复 -->
-        <a-button 
-          type="text" 
-          size="small" 
-          @click="toggleHide"
-          :title="chatPanelMode === 'hidden' ? '恢复聊天面板' : '隐藏聊天面板'"
-        >
-          <template #icon>
-            <icon-left v-if="chatPanelMode !== 'hidden'" />
-            <icon-right v-else />
-          </template>
-        </a-button>
       </div>
     </div>
 
@@ -201,9 +188,7 @@ import {
   IconBranch, 
   IconSend,
   IconFullscreen,
-  IconFullscreenExit,
-  IconRight,
-  IconLeft
+  IconFullscreenExit
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
@@ -360,14 +345,6 @@ function toggleMaximize() {
   }
 }
 
-// 切换隐藏状态
-function toggleHide() {
-  if (chatPanelMode.value === 'hidden') {
-    layoutStore.setChatPanelMode('normal')
-  } else {
-    layoutStore.setChatPanelMode('hidden')
-  }
-}
 </script>
 
 <style lang="less" scoped>
