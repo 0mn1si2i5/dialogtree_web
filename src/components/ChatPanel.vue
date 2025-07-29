@@ -269,7 +269,6 @@ async function sendMessage() {
     }
 
     await dialogStore.createDialog(request)
-    Message.success('对话创建成功')
   } catch (error) {
     console.error('Failed to create dialog:', error)
     Message.error('发送失败，请重试')

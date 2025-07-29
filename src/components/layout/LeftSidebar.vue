@@ -41,13 +41,14 @@
       <!-- 会话列表 -->
       <div class="session-list">
         <a-spin :loading="sessionStore.loading">
-          <div 
-            v-for="session in filteredSessions"
-            :key="session.id"
-            class="session-item"
-            :class="{ active: session.id === currentSessionId }"
-            @click="selectSession(session.id)"
-          >
+          <transition-group name="session-list" tag="div" class="session-list-container">
+            <div 
+              v-for="session in filteredSessions"
+              :key="session.id"
+              class="session-item"
+              :class="{ active: session.id === currentSessionId }"
+              @click="selectSession(session.id)"
+            >
             <div class="session-info">
               <div class="session-title" :title="session.title">
                 {{ session.title }}
@@ -74,7 +75,8 @@
                 <a-doption value="delete" class="danger">删除</a-doption>
               </template>
             </a-dropdown>
-          </div>
+            </div>
+          </transition-group>
           
           <a-empty 
             v-if="filteredSessions.length === 0 && !sessionStore.loading"
@@ -759,6 +761,41 @@ function resetRenameCategoryForm() {
   
   &:hover {
     background-color: #fff2f0;
+  }
+}
+
+// 会话列表动画
+.session-list-container {
+  position: relative;
+}
+
+.session-list-move,
+.session-list-enter-active,
+.session-list-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.session-list-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.session-list-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.session-list-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
+// 为会话项添加过渡效果
+.session-item {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: translateX(2px);
   }
 }
 </style>

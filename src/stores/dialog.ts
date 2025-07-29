@@ -14,6 +14,7 @@ import type {
   Conversation,
   CreateDialogRequest 
 } from '@/types'
+import { useSessionStore } from './session'
 
 export const useDialogStore = defineStore('dialog', () => {
   // ===== 状态 =====
@@ -155,6 +156,37 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
+  // 刷新对话树数据但保持选中状态
+  async function refreshDialogTreeData(sessionId: number, targetConversationId?: number) {
+    try {
+      loading.value = true
+      error.value = ''
+      
+      console.log('Refreshing dialog tree data for session:', sessionId, 'target conversation:', targetConversationId)
+      
+      const data = await sessionApi.getSessionTree(sessionId)
+      dialogTreeData.value = data
+      
+      // 转换为前端对话树结构
+      conversationTree.value = transformDialogTreeToConversationTree(data.dialogTree)
+      
+      // 如果指定了目标对话ID，选中它并获取祖先数据
+      if (targetConversationId) {
+        selectedConversationId.value = targetConversationId
+        await fetchAncestors(targetConversationId)
+      } else if (selectedConversationId.value) {
+        // 如果之前有选中的对话，重新获取其祖先数据
+        await fetchAncestors(selectedConversationId.value)
+      }
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '刷新对话树失败'
+      console.error('Failed to refresh dialog tree:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 创建新对话（SSE流式响应）
   async function createDialog(request: CreateDialogRequest) {
     return new Promise<{ dialogId: number; conversationId: number }>((resolve, reject) => {
@@ -172,17 +204,73 @@ export const useDialogStore = defineStore('dialog', () => {
         // onComplete
         async (result) => {
           try {
-            isStreaming.value = false
-            pendingUserMessage.value = '' // 清空待处理消息
+            console.log('SSE completed, result:', result)
             
-            // 重新获取对话树以更新显示
+            // 重新获取对话树数据
             if (dialogTreeData.value) {
-              await fetchDialogTree(dialogTreeData.value.sessionId)
+              const sessionId = dialogTreeData.value.sessionId
+              
+              // 如果后端提供了具体的对话ID，选中它
+              if (result.conversationId > 0) {
+                await refreshDialogTreeData(sessionId, result.conversationId)
+              } else {
+                // 如果是特殊标记（-1），需要找到刚创建的对话
+                // 先刷新对话树数据
+                await refreshDialogTreeData(sessionId)
+                
+                // 尝试从刷新后的数据中找到最新创建的对话
+                // 根据用户发送的消息内容来匹配
+                if (dialogTreeData.value?.dialogTree && pendingUserMessage.value) {
+                  const userMessage = pendingUserMessage.value
+                  let foundConversationId: number | null = null
+                  
+                  // 递归搜索所有对话，找到匹配用户消息的对话
+                  function findConversationByPrompt(dialogs: any[]): number | null {
+                    for (const dialog of dialogs) {
+                      if (dialog.conversations) {
+                        for (const conv of dialog.conversations) {
+                          if (conv.prompt === userMessage) {
+                            return conv.id
+                          }
+                        }
+                      }
+                      if (dialog.children && dialog.children.length > 0) {
+                        const found = findConversationByPrompt(dialog.children)
+                        if (found) return found
+                      }
+                    }
+                    return null
+                  }
+                  
+                  foundConversationId = findConversationByPrompt(dialogTreeData.value.dialogTree)
+                  
+                  if (foundConversationId) {
+                    selectedConversationId.value = foundConversationId
+                    await fetchAncestors(foundConversationId)
+                    console.log('Found and selected new conversation:', foundConversationId)
+                  } else {
+                    console.log('Could not find new conversation, keeping current selection')
+                  }
+                } else {
+                  console.log('Dialog created successfully, tree updated but no auto-selection')
+                }
+              }
             }
             
-            // 自动选中新创建的对话
-            selectedConversationId.value = result.conversationId
-            await fetchAncestors(result.conversationId)
+            // 更新会话列表排序（因为创建对话会更新session的updatedAt）
+            try {
+              const sessionStore = useSessionStore()
+              console.log('Refreshing session list after dialog creation')
+              await sessionStore.fetchSessions()
+              console.log('Session list refreshed successfully')
+            } catch (sessionError) {
+              console.error('Failed to refresh session list:', sessionError)
+              // 不要因为会话列表刷新失败而影响对话创建的成功状态
+            }
+            
+            // 清理流式状态
+            isStreaming.value = false
+            pendingUserMessage.value = ''
             
             resolve(result)
           } catch (err) {
@@ -228,14 +316,9 @@ export const useDialogStore = defineStore('dialog', () => {
     try {
       const result = await dialogApi.toggleStar(conversationId)
       
-      // 重新获取对话树以更新显示
+      // 重新获取对话树以更新显示（保持当前选中状态）
       if (dialogTreeData.value) {
-        await fetchDialogTree(dialogTreeData.value.sessionId)
-      }
-      
-      // 如果是当前选中的对话，重新获取祖先数据
-      if (selectedConversationId.value === conversationId) {
-        await fetchAncestors(conversationId)
+        await refreshDialogTreeData(dialogTreeData.value.sessionId)
       }
       
       return result
@@ -251,14 +334,9 @@ export const useDialogStore = defineStore('dialog', () => {
     try {
       await dialogApi.updateComment({ id: conversationId, comment })
       
-      // 重新获取对话树以更新显示
+      // 重新获取对话树以更新显示（保持当前选中状态）
       if (dialogTreeData.value) {
-        await fetchDialogTree(dialogTreeData.value.sessionId)
-      }
-      
-      // 如果是当前选中的对话，重新获取祖先数据
-      if (selectedConversationId.value === conversationId) {
-        await fetchAncestors(conversationId)
+        await refreshDialogTreeData(dialogTreeData.value.sessionId)
       }
       
     } catch (err) {
@@ -273,14 +351,9 @@ export const useDialogStore = defineStore('dialog', () => {
     try {
       await dialogApi.deleteComment(conversationId)
       
-      // 重新获取对话树以更新显示
+      // 重新获取对话树以更新显示（保持当前选中状态）
       if (dialogTreeData.value) {
-        await fetchDialogTree(dialogTreeData.value.sessionId)
-      }
-      
-      // 如果是当前选中的对话，重新获取祖先数据
-      if (selectedConversationId.value === conversationId) {
-        await fetchAncestors(conversationId)
+        await refreshDialogTreeData(dialogTreeData.value.sessionId)
       }
       
     } catch (err) {
@@ -352,6 +425,7 @@ export const useDialogStore = defineStore('dialog', () => {
     // Actions
     clearDialogState,
     fetchDialogTree,
+    refreshDialogTreeData,
     createDialog,
     fetchAncestors,
     toggleStar,

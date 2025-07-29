@@ -46,9 +46,16 @@ export const dialogApi = {
         const { done, value } = await reader.read()
         
         if (done) {
-          // 如果流结束但没有收到完成信号，则报错
+          // 如果流结束但没有收到完成信号，说明后端没有发送done信号
+          // 这是正常情况，我们需要手动触发完成回调
           if (!hasReceivedDone) {
-            onError('流式响应意外结束')
+            console.log('SSE stream ended without done signal, triggering completion manually')
+            // 由于后端没有提供具体的ID信息，我们传递一个特殊标记
+            // 让上层逻辑去获取最新创建的对话信息
+            onComplete({
+              dialogId: -1, // 特殊标记，表示需要从树数据中获取
+              conversationId: -1 // 特殊标记，表示需要从树数据中获取
+            })
           }
           break
         }

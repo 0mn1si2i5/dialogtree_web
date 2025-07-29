@@ -62,13 +62,11 @@ export const useLayoutStore = defineStore('layout', () => {
     switch (chatPanelMode.value) {
       case 'normal':
         chatPanelMode.value = 'expanded'
-        // 展开模式时自动隐藏侧边栏
-        sidebarVisible.value = false
+        // 不再自动隐藏侧边栏，保持用户的选择
         break
       case 'expanded':
         chatPanelMode.value = 'hidden'
-        // 恢复侧边栏显示
-        sidebarVisible.value = true
+        // 不再自动显示侧边栏，保持用户的选择
         break
       case 'hidden':
         chatPanelMode.value = 'normal'
@@ -79,13 +77,7 @@ export const useLayoutStore = defineStore('layout', () => {
   // 设置聊天面板模式
   function setChatPanelMode(mode: PanelMode) {
     chatPanelMode.value = mode
-    
-    // 展开模式时自动处理侧边栏
-    if (mode === 'expanded') {
-      sidebarVisible.value = false
-    } else if (mode === 'normal' || mode === 'hidden') {
-      sidebarVisible.value = true
-    }
+    // 不再自动修改侧边栏状态，保持用户的选择
   }
 
   // 重置布局到默认状态
