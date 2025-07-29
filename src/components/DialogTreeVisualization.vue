@@ -8,18 +8,26 @@
             <template #icon>
               <icon-fullscreen />
             </template>
-            适应屏幕
+            {{ $t('tree.fitScreen') }}
           </a-button>
           <a-button @click="resetZoom" type="text">
             <template #icon>
               <icon-refresh />
             </template>
-            实际大小
+            {{ $t('tree.actualSize') }}
           </a-button>
         </a-button-group>
       </div>
       
       <div class="toolbar-right">
+        <!-- 语言切换按钮 -->
+        <a-button @click="toggleLanguage" type="text" size="small" class="language-toggle">
+          <template #icon>
+            <icon-language />
+          </template>
+          {{ localeStore.getToggleButtonText() }}
+        </a-button>
+        
         <!-- 节点颜色图例 -->
 <!--        <div class="color-legend">-->
 <!--          <div class="legend-item">-->
@@ -76,7 +84,7 @@
 
     <!-- 空状态 -->
     <div v-if="!hasDialogTree" class="empty-state">
-      <a-empty description="选择一个会话开始对话" />
+      <a-empty :description="$t('chat.selectSession')" />
     </div>
   </div>
 </template>
@@ -84,15 +92,19 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as d3 from 'd3'
-import { useDialogStore } from '@/stores'
+import { useI18n } from 'vue-i18n'
+import { useDialogStore, useLocaleStore } from '@/stores'
 import { 
   IconFullscreen, 
-  IconRefresh 
+  IconRefresh,
+  IconLanguage
 } from '@arco-design/web-vue/es/icon'
 import type { ConversationTreeNode } from '@/types'
 
-// 使用stores
+// 使用stores和i18n
 const dialogStore = useDialogStore()
+const localeStore = useLocaleStore()
+const { locale } = useI18n()
 
 // 模板引用
 const containerRef = ref<HTMLElement>()
@@ -546,6 +558,12 @@ function resetZoom() {
   svg.transition()
     .duration(750)
     .call(zoom.transform, d3.zoomIdentity)
+}
+
+// 切换语言
+function toggleLanguage() {
+  localeStore.toggleLocale()
+  locale.value = localeStore.currentLocale
 }
 
 // 处理窗口大小变化

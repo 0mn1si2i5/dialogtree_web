@@ -3,21 +3,21 @@
     <!-- 新建会话模态框 -->
     <a-modal
       :visible="showCreateSessionModal"
-      title="新建会话"
+      :title="$t('session.createSession')"
       @ok="$emit('create-session')"
       @cancel="$emit('reset-create-session-form')"
       @update:visible="$emit('update:showCreateSessionModal', $event)"
     >
       <a-form :model="createSessionForm" layout="vertical">
-        <a-form-item label="会话标题" required>
+        <a-form-item :label="$t('session.sessionTitle')" required>
           <a-input 
             v-model="createSessionForm.title" 
-            placeholder="请输入会话标题"
+            :placeholder="$t('session.enterSessionTitle')"
             @keyup.enter="$emit('create-session')"
           />
         </a-form-item>
-        <a-form-item label="选择分类" required>
-          <a-select v-model="createSessionForm.categoryID" placeholder="选择分类">
+        <a-form-item :label="$t('sidebar.selectCategory')" required>
+          <a-select v-model="createSessionForm.categoryID" :placeholder="$t('sidebar.selectCategory')">
             <a-option 
               v-for="category in categories"
               :key="category.id"
@@ -33,16 +33,16 @@
     <!-- 新建分类模态框 -->
     <a-modal
       :visible="showCreateCategoryModal"
-      title="新建分类"
+      :title="$t('session.createCategory')"
       @ok="$emit('create-category')"
       @cancel="$emit('reset-create-category-form')"
       @update:visible="$emit('update:showCreateCategoryModal', $event)"
     >
       <a-form :model="createCategoryForm" layout="vertical">
-        <a-form-item label="分类名称" required>
+        <a-form-item :label="$t('session.categoryName')" required>
           <a-input 
             v-model="createCategoryForm.name" 
-            placeholder="请输入分类名称"
+            :placeholder="$t('session.enterCategoryName')"
             @keyup.enter="$emit('create-category')"
           />
         </a-form-item>
@@ -52,16 +52,16 @@
     <!-- 会话重命名模态框 -->
     <a-modal
       :visible="showRenameSessionModal"
-      title="重命名会话"
+      :title="$t('session.renameSession')"
       @ok="$emit('rename-session')"
       @cancel="$emit('reset-rename-session-form')"
       @update:visible="$emit('update:showRenameSessionModal', $event)"
     >
       <a-form :model="renameSessionForm" layout="vertical">
-        <a-form-item label="会话标题" required>
+        <a-form-item :label="$t('session.sessionTitle')" required>
           <a-input 
             v-model="renameSessionForm.title" 
-            placeholder="请输入新的会话标题"
+            :placeholder="$t('session.enterNewSessionTitle')"
             @keyup.enter="$emit('rename-session')"
           />
         </a-form-item>
@@ -71,14 +71,14 @@
     <!-- 会话修改分类模态框 -->
     <a-modal
       :visible="showMoveSessionModal"
-      title="修改分类"
+      :title="$t('session.moveSession')"
       @ok="$emit('move-session')"
       @cancel="$emit('reset-move-session-form')"
       @update:visible="$emit('update:showMoveSessionModal', $event)"
     >
       <a-form :model="moveSessionForm" layout="vertical">
-        <a-form-item label="选择分类" required>
-          <a-select v-model="moveSessionForm.categoryID" placeholder="选择新的分类">
+        <a-form-item :label="$t('sidebar.selectCategory')" required>
+          <a-select v-model="moveSessionForm.categoryID" :placeholder="$t('session.selectNewCategory')">
             <a-option 
               v-for="category in categories"
               :key="category.id"
@@ -94,16 +94,16 @@
     <!-- 分类重命名模态框 -->
     <a-modal
       :visible="showRenameCategoryModal"
-      title="重命名分类"
+      :title="$t('session.renameCategory')"
       @ok="$emit('rename-category')"
       @cancel="$emit('reset-rename-category-form')"
       @update:visible="$emit('update:showRenameCategoryModal', $event)"
     >
       <a-form :model="renameCategoryForm" layout="vertical">
-        <a-form-item label="分类名称" required>
+        <a-form-item :label="$t('session.categoryName')" required>
           <a-input 
             v-model="renameCategoryForm.name" 
-            placeholder="请输入新的分类名称"
+            :placeholder="$t('session.enterNewCategoryName')"
             @keyup.enter="$emit('rename-category')"
           />
         </a-form-item>
@@ -113,7 +113,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { Category } from '@/types'
+
+const { t } = useI18n()
 
 // Props
 defineProps<{

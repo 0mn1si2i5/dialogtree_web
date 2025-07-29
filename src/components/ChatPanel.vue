@@ -4,7 +4,7 @@
     <div class="chat-header">
       <div class="header-title">
         <span v-if="currentSession">{{ currentSession.title }}</span>
-        <span v-else>选择会话开始对话</span>
+        <span v-else>{{ $t('chat.selectSession') }}</span>
       </div>
       
       <div class="header-actions">
@@ -14,7 +14,7 @@
           type="text" 
           size="small" 
           @click="toggleMaximize"
-          :title="chatPanelMode === 'normal' ? '最大化聊天面板' : '恢复正常大小'"
+          :title="chatPanelMode === 'normal' ? $t('tree.expandPanel') : $t('tree.restorePanel')"
         >
           <template #icon>
             <icon-fullscreen v-if="chatPanelMode === 'normal'" />
@@ -57,6 +57,7 @@
                   size="mini"
                   @click="toggleStar(message.conversationId!)"
                   :class="{ starred: message.isStarred }"
+                  :title="message.isStarred ? $t('chat.unstar') : $t('chat.star')"
                 >
                   <template #icon>
                     <icon-star-fill v-if="message.isStarred" />
@@ -69,6 +70,7 @@
                   size="mini"
                   @click="showCommentModal(message)"
                   :class="{ commented: message.comment && message.comment.trim() }"
+                  :title="$t('chat.addComment')"
                 >
                   <template #icon>
                     <icon-message />
@@ -80,6 +82,7 @@
                   type="text" 
                   size="mini"
                   @click="continueFromMessage(message)"
+                  :title="$t('chat.continueConversation')"
                 >
                   <template #icon>
                     <icon-branch />
@@ -91,7 +94,7 @@
                   type="text" 
                   size="mini"
                   @click="copyMessageContent(message.content)"
-                  title="复制内容"
+                  :title="$t('chat.copyContent')"
                   class="copy-button"
                 >
                   <template #icon>
@@ -123,7 +126,7 @@
 
         <!-- 空状态 -->
         <div v-if="currentChatHistory.length === 0 && !isStreaming" class="empty-chat">
-          <a-empty description="点击对话树中的节点查看对话历史" />
+          <a-empty :description="$t('chat.emptyState')" />
         </div>
       </div>
     </div>
@@ -133,7 +136,7 @@
       <div class="input-container">
         <a-textarea
           v-model="inputMessage"
-          placeholder="输入您的问题..."
+          :placeholder="$t('chat.inputPlaceholder')"
           :auto-size="{ minRows: 1, maxRows: 12}"
           :disabled="isStreaming"
           @keydown.ctrl.enter="sendMessage"
@@ -148,14 +151,14 @@
           <template #icon>
             <icon-send />
           </template>
-          发送
+          {{ $t('chat.send') }}
         </a-button>
       </div>
       
       <div class="input-tip">
-        <span>Ctrl + Enter 快速发送</span>
+        <span>{{ $t('chat.sendTip') }}</span>
         <span v-if="selectedConversationId">
-          将从选中节点继续对话
+          {{ $t('chat.continueFromNode') }}
         </span>
       </div>
     </div>
@@ -194,6 +197,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Message } from '@arco-design/web-vue'
 import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
 import { 
@@ -212,10 +216,11 @@ import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
-// 使用stores
+// 使用stores和i18n
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
 const layoutStore = useLayoutStore()
+const { t } = useI18n()
 
 // 响应式状态
 const inputMessage = ref('')
@@ -342,7 +347,7 @@ function handleCancelComment() {
 function continueFromMessage(message: ChatMessage) {
   if (message.conversationId) {
     dialogStore.setSelectedConversation(message.conversationId)
-    Message.info('已选择此节点作为分叉起点，现在可以输入新问题')
+    Message.info(t('chat.nodeSelected'))
   }
 }
 
@@ -350,10 +355,10 @@ function continueFromMessage(message: ChatMessage) {
 async function copyMessageContent(content: string) {
   try {
     await navigator.clipboard.writeText(content)
-    Message.success('内容已复制到剪贴板')
+    Message.success(t('chat.copySuccess'))
   } catch (error) {
     console.error('复制失败:', error)
-    Message.error('复制失败，请手动复制')
+    Message.error(t('chat.copyFailed'))
   }
 }
 
@@ -415,8 +420,9 @@ function toggleMaximize() {
 .message-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   padding: 0 16px;
+  min-height: calc(100% - 32px);
 }
 
 .message-item {
@@ -591,7 +597,8 @@ function toggleMaximize() {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  flex: 1;
+  min-height: 200px;
   color: #999;
 }
 

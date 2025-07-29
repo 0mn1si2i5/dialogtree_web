@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
+import { useSessionStore, useDialogStore, useLayoutStore, useLocaleStore } from '@/stores'
 import { IconRight, IconLeft } from '@arco-design/web-vue/es/icon'
 import LeftSidebar from '@/components/layout/LeftSidebar.vue'
 import MainContent from '@/components/layout/MainContent.vue'
@@ -76,6 +76,7 @@ import RightPanel from '@/components/layout/RightPanel.vue'
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
 const layoutStore = useLayoutStore()
+const localeStore = useLocaleStore()
 
 // 计算属性
 const sidebarVisible = computed(() => layoutStore.sidebarVisible)
@@ -101,6 +102,9 @@ function hideChatPanel() {
 // 初始化数据
 onMounted(async () => {
   try {
+    // 初始化locale
+    localeStore.initialize()
+    
     // 初始化session和category数据
     await sessionStore.initialize()
     

@@ -2,3 +2,4 @@
 export { useSessionStore } from './session'
 export { useDialogStore } from './dialog'
 export { useLayoutStore } from './layout'
+export { useLocaleStore } from './locale'

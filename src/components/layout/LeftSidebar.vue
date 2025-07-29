@@ -13,8 +13,8 @@
     <!-- 标签页工具栏 -->
     <div class="sidebar-header">
       <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs" type="text" hide-content>
-        <a-tab-pane key="sessions" title="会话列表" />
-        <a-tab-pane key="categories" title="分类管理" />
+        <a-tab-pane key="sessions" :title="$t('sidebar.sessions')" />
+        <a-tab-pane key="categories" :title="$t('sidebar.categories')" />
       </a-tabs>
     </div>
 
@@ -24,12 +24,12 @@
       <div class="category-filter">
         <a-select
           v-model="selectedCategoryId"
-          placeholder="选择分类"
+          :placeholder="$t('sidebar.selectCategory')"
           allow-clear
           @change="handleCategoryChange"
           @clear="handleCategoryClear"
         >
-          <a-option value="all">全部分类</a-option>
+          <a-option value="all">{{ $t('sidebar.allCategories') }}</a-option>
           <a-option 
             v-for="category in categories"
             :key="category.id"
@@ -72,9 +72,9 @@
                 </template>
               </a-button>
               <template #content>
-                <a-doption value="rename">重命名</a-doption>
-                <a-doption value="move">移动到分类</a-doption>
-                <a-doption value="delete" class="danger">删除</a-doption>
+                <a-doption value="rename">{{ $t('session.rename') }}</a-doption>
+                <a-doption value="move">{{ $t('session.move') }}</a-doption>
+                <a-doption value="delete" class="danger">{{ $t('session.delete') }}</a-doption>
               </template>
             </a-dropdown>
             </div>
@@ -82,7 +82,7 @@
           
           <a-empty 
             v-if="filteredSessions.length === 0 && !sessionStore.loading"
-            description="暂无会话"
+            :description="$t('sidebar.noSessions')"
           />
         </a-spin>
       </div>
@@ -95,7 +95,7 @@
           block
           @click="showCreateSessionModal = true"
         >
-          新建会话
+          {{ $t('sidebar.newSession') }}
         </a-button>
       </div>
     </div>
@@ -123,15 +123,15 @@
                 </template>
               </a-button>
               <template #content>
-                <a-doption value="rename">重命名</a-doption>
-                <a-doption value="delete" class="danger">删除</a-doption>
+                <a-doption value="rename">{{ $t('session.rename') }}</a-doption>
+                <a-doption value="delete" class="danger">{{ $t('session.delete') }}</a-doption>
               </template>
             </a-dropdown>
           </div>
           
           <a-empty 
             v-if="categories.length === 0 && !sessionStore.loading"
-            description="暂无分类"
+            :description="$t('sidebar.noCategories')"
           />
         </a-spin>
       </div>
@@ -144,7 +144,7 @@
           block
           @click="showCreateCategoryModal = true"
         >
-          新建分类
+          {{ $t('sidebar.newCategory') }}
         </a-button>
       </div>
     </div>
@@ -178,16 +178,19 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Message, Modal } from '@arco-design/web-vue'
-import { useSessionStore, useDialogStore } from '@/stores'
+import { useSessionStore, useDialogStore, useLocaleStore } from '@/stores'
 import { IconMore } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { Session, Category } from '@/types'
 import SessionModals from './SessionModals.vue'
 
-// 使用stores
+// 使用stores和i18n
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
+const localeStore = useLocaleStore()
+const { t } = useI18n()
 
 // 响应式状态
 const activeTab = ref('sessions')
