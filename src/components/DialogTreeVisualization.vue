@@ -216,7 +216,7 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
     .attr('fill', 'none')
     .attr('stroke', '#ccc')
     .attr('stroke-width', 2)
-    .attr('marker-end', 'url(#arrowhead)')
+    // .attr('marker-end', 'url(#arrowhead)') // 移除箭头
 
   // 更新连接线路径
   linkEnter.merge(linkSelection)
@@ -272,6 +272,27 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
 
+  // Summary框 - 默认不可见
+  const summaryGroup = nodeEnter.append('g')
+    .attr('class', 'summary-container')
+    .style('opacity', 0)
+    .style('pointer-events', 'none')
+
+  // Summary背景
+  summaryGroup.append('rect')
+    .attr('class', 'summary-background')
+    .attr('rx', 6)
+    .attr('ry', 6)
+    .attr('width', 200) // 固定宽度
+    .attr('x', -100) // 居中
+    .attr('y', 25) // 位于节点下方
+
+  // Summary文本
+  summaryGroup.append('text')
+    .attr('class', 'summary-text')
+    .attr('text-anchor', 'middle')
+    .attr('y', 40)
+
   // 更新现有节点
   const nodeUpdate = nodeEnter.merge(nodeSelection)
     .transition()
@@ -281,6 +302,9 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
 
   // 更新文本内容和样式
   updateNodeTexts(nodeUpdate)
+  
+  // 更新Summary内容
+  updateSummaryTexts(nodeEnter.merge(nodeSelection))
   
   // 添加交互事件
   addNodeInteractions(nodeEnter.merge(nodeSelection))
@@ -293,17 +317,17 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
 function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
   selection.select('.text-content')
     .text(d => {
-      const summary = d.data.summary || d.data.content || 'Conversation'
-      // 限制文本长度，支持换行
-      return summary.length > 30 ? summary.substring(0, 30) + '...' : summary
+      // 节点本身显示简化的对话标题或序号
+      const title = d.data.title || `对话 ${d.data.conversationId}`
+      return title.length > 15 ? title.substring(0, 15) + '...' : title
     })
     .each(function(d) {
       const text = d3.select(this)
-      const content = d.data.summary || d.data.content || 'Conversation'
+      const title = d.data.title || `对话 ${d.data.conversationId}`
       
-      // 如果文本太长，进行换行处理
-      if (content.length > 20) {
-        const words = content.split('')
+      // 如果标题太长，进行换行处理
+      if (title.length > 15) {
+        const words = title.split('')
         text.text('')
         
         let tspan = text.append('tspan')
@@ -311,8 +335,8 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
           .attr('dy', '0em')
         
         let line = ''
-        for (let i = 0; i < Math.min(words.length, 40); i++) {
-          if (i > 0 && i % 20 === 0) {
+        for (let i = 0; i < Math.min(words.length, 30); i++) {
+          if (i > 0 && i % 15 === 0) {
             tspan.text(line)
             tspan = text.append('tspan')
               .attr('x', 0)
@@ -322,7 +346,7 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
             line += words[i]
           }
         }
-        tspan.text(line + (content.length > 40 ? '...' : ''))
+        tspan.text(line + (title.length > 30 ? '...' : ''))
       }
     })
 
@@ -338,6 +362,43 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
           .attr('y', bbox.y - 4)
           .attr('width', bbox.width + 16)
           .attr('height', bbox.height + 8)
+      }
+    })
+}
+
+// 更新Summary文本
+function updateSummaryTexts(selection: d3.Selection<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
+  selection.select('.summary-text')
+    .text(d => {
+      const summary = d.data.summary || d.data.content || 'No summary'
+      return summary.length > 20 ? summary.substring(0, 20) + '...' : summary
+    })
+    .each(function(d) {
+      const text = d3.select(this)
+      const summary = d.data.summary || d.data.content || 'No summary'
+      
+      // 如果摘要太长，进行换行处理
+      if (summary.length > 20) {
+        const words = summary.split('')
+        text.text('')
+        
+        let tspan = text.append('tspan')
+          .attr('x', 0)
+          .attr('dy', '0em')
+        
+        let line = ''
+        for (let i = 0; i < Math.min(words.length, 30); i++) {
+          if (i > 0 && i % 20 === 0) {
+            tspan.text(line)
+            tspan = text.append('tspan')
+              .attr('x', 0)
+              .attr('dy', '1.2em')
+            line = words[i]
+          } else {
+            line += words[i]
+          }
+        }
+        tspan.text(line + (summary.length > 30 ? '...' : ''))
       }
     })
 }
@@ -400,7 +461,11 @@ function handleNodeMouseEnter(event: MouseEvent, node: ConversationTreeNode) {
   
   hoverTimeout = setTimeout(() => {
     if (hoverId === node.id) {
-      showTooltip(event, node.summary || node.content || 'No content')
+      // 显示当前节点的summary框
+      g.selectAll<SVGGElement, d3.HierarchyNode<ConversationTreeNode>>('.node')
+        .filter(d => d.data.id === node.id)
+        .select('.summary-container')
+        .style('opacity', 1)
     }
   }, 500) // 0.5秒延迟
 }
@@ -412,7 +477,10 @@ function handleNodeMouseLeave() {
     hoverTimeout = null
   }
   hoverId = null
-  hideTooltip()
+  
+  // 隐藏所有summary框
+  g.selectAll('.summary-container')
+    .style('opacity', 0)
 }
 
 // 显示提示
@@ -591,6 +659,10 @@ function handleResize() {
     &.assistant {
       // AI回答节点样式
     }
+    
+    &.conversation {
+      // 完整对话节点样式（默认样式即可）
+    }
   }
   
   .text-background {
@@ -604,6 +676,23 @@ function handleResize() {
     font-size: 12px;
     font-weight: 500;
   }
+
+  .summary-container {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .summary-background {
+    fill: rgba(255, 255, 255, 0.3);
+    stroke: #fff;
+    stroke-width: 1px;
+  }
+
+  .summary-text {
+    fill: #fff;
+    font-size: 12px;
+    font-weight: 500;
+  }
   
   &:hover {
     .node-circle {
@@ -614,6 +703,11 @@ function handleResize() {
     .text-background {
       fill: rgba(255, 255, 255, 1);
       stroke: #999;
+    }
+
+    .summary-container {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 }

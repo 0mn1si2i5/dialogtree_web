@@ -6,7 +6,7 @@ import type { DialogNode, ConversationTreeNode, Conversation } from '@/types'
  * 转换逻辑：
  * 1. 每个dialog内的conversations按时间排序，形成线性链
  * 2. 分叉点连接到子dialog的第一个conversation
- * 3. 每个conversation展开为用户问题(user)和AI回答(assistant)两个节点
+ * 3. 每个conversation作为一个单独的节点展示(不再分离user/assistant)
  */
 export function transformDialogTreeToConversationTree(
   dialogNodes: DialogNode[] | null
@@ -24,29 +24,16 @@ export function transformDialogTreeToConversationTree(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     )
 
+    let previousNode: ConversationTreeNode | null = null
+
     for (let i = 0; i < sortedConversations.length; i++) {
       const conv = sortedConversations[i]
       
-      // 创建用户问题节点
-      const userNode: ConversationTreeNode = {
-        id: conv.id * 2, // 用偶数ID表示用户消息
-        type: 'user',
-        content: conv.prompt,
-        conversationId: conv.id,
-        dialogId: conv.dialogID,
-        title: conv.title,
-        summary: conv.summary,
-        isStarred: conv.isStarred,
-        comment: conv.comment,
-        createdAt: conv.createdAt,
-        children: [],
-      }
-
-      // 创建AI回答节点
-      const assistantNode: ConversationTreeNode = {
-        id: conv.id * 2 + 1, // 用奇数ID表示AI消息
-        type: 'assistant',
-        content: conv.answer,
+      // 每个conversation创建为单个节点
+      const conversationNode: ConversationTreeNode = {
+        id: conv.id, // 直接使用conversation ID
+        type: 'conversation', // 新类型表示完整对话
+        content: conv.answer, // 主要内容显示回答
         conversationId: conv.id,
         dialogId: conv.dialogID,
         title: conv.title,
@@ -59,15 +46,15 @@ export function transformDialogTreeToConversationTree(
 
       // 建立父子关系
       if (i === 0) {
-        // 第一个conversation
-        userNode.children.push(assistantNode)
-        nodes.push(userNode)
+        // 第一个conversation作为这个dialog的根节点
+        nodes.push(conversationNode)
+        previousNode = conversationNode
       } else {
-        // 后续conversations连接到前一个assistant节点
-        const prevAssistantNode = nodes[nodes.length - 1]
-        userNode.children.push(assistantNode)
-        prevAssistantNode.children.push(userNode)
-        nodes.push(userNode)
+        // 后续conversations连接到前一个节点
+        if (previousNode) {
+          previousNode.children.push(conversationNode)
+          previousNode = conversationNode
+        }
       }
 
       // 如果是最后一个conversation且有子dialog，连接分叉
@@ -75,7 +62,7 @@ export function transformDialogTreeToConversationTree(
         for (const childDialog of dialog.children) {
           const childNodes = transformDialogNode(childDialog)
           if (childNodes.length > 0) {
-            assistantNode.children.push(...childNodes)
+            conversationNode.children.push(...childNodes)
           }
         }
       }
@@ -87,7 +74,7 @@ export function transformDialogTreeToConversationTree(
   // 转换根dialog（通常是第一个）
   const rootNodes = transformDialogNode(dialogNodes[0])
   
-  // 返回根节点（第一个用户问题节点）
+  // 返回根节点
   return rootNodes.length > 0 ? rootNodes[0] : null
 }
 
@@ -129,7 +116,7 @@ export function extractChatHistoryFromConversationTree(
 
 /**
  * 从祖先API数据构建聊天历史
- * 这是第一轮开发中缺失的重要功能
+ * 用于在聊天面板中显示完整的问答历史
  */
 export function buildChatHistoryFromAncestors(
   ancestors: Conversation[],
@@ -137,11 +124,12 @@ export function buildChatHistoryFromAncestors(
 ): ConversationTreeNode[] {
   const history: ConversationTreeNode[] = []
   
-  // 处理祖先节点
+  // 处理祖先节点，为每个conversation创建用户问题和AI回答
   for (const conv of ancestors) {
+    // 添加用户问题
     if (conv.prompt && conv.prompt.trim()) {
       history.push({
-        id: conv.id * 2,
+        id: conv.id * 1000, // 使用特殊ID避免冲突
         type: 'user',
         content: conv.prompt,
         conversationId: conv.id,
@@ -155,9 +143,10 @@ export function buildChatHistoryFromAncestors(
       })
     }
 
+    // 添加AI回答
     if (conv.answer && conv.answer.trim()) {
       history.push({
-        id: conv.id * 2 + 1,
+        id: conv.id * 1000 + 1, // 使用特殊ID避免冲突
         type: 'assistant',
         content: conv.answer,
         conversationId: conv.id,
@@ -176,7 +165,7 @@ export function buildChatHistoryFromAncestors(
   if (currentConversation && !ancestors.find(a => a.id === currentConversation.id)) {
     if (currentConversation.prompt && currentConversation.prompt.trim()) {
       history.push({
-        id: currentConversation.id * 2,
+        id: currentConversation.id * 1000,
         type: 'user',
         content: currentConversation.prompt,
         conversationId: currentConversation.id,
@@ -192,7 +181,7 @@ export function buildChatHistoryFromAncestors(
 
     if (currentConversation.answer && currentConversation.answer.trim()) {
       history.push({
-        id: currentConversation.id * 2 + 1,
+        id: currentConversation.id * 1000 + 1,
         type: 'assistant',
         content: currentConversation.answer,
         conversationId: currentConversation.id,

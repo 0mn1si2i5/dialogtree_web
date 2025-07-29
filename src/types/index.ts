@@ -48,7 +48,7 @@ export interface DialogTreeData {
 
 export interface ConversationTreeNode {
   id: number
-  type: 'user' | 'assistant'
+  type: 'user' | 'assistant' | 'conversation'
   content: string
   conversationId: number
   dialogId: number
