@@ -5,7 +5,7 @@
       v-show="sidebarVisible" 
       class="sidebar-area"
     >
-      <SessionSidebar />
+      <LeftSidebar />
       
       <!-- 左边栏隐藏按钮 -->
       <div 
@@ -32,12 +32,12 @@
       v-show="showTreeArea" 
       class="tree-area"
     >
-      <DialogTreeVisualization />
+      <MainContent />
     </main>
 
     <!-- 右侧聊天面板 -->
     <section class="chat-area">
-      <ChatPanel />
+      <RightPanel />
       
       <!-- 右边栏隐藏按钮 -->
       <div 
@@ -66,9 +66,9 @@
 import { computed, onMounted } from 'vue'
 import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
 import { IconRight, IconLeft } from '@arco-design/web-vue/es/icon'
-import SessionSidebar from '@/components/SessionSidebar.vue'
-import DialogTreeVisualization from '@/components/DialogTreeVisualization.vue'
-import ChatPanel from '@/components/ChatPanel.vue'
+import LeftSidebar from '@/components/layout/LeftSidebar.vue'
+import MainContent from '@/components/layout/MainContent.vue'
+import RightPanel from '@/components/layout/RightPanel.vue'
 
 // 使用stores
 const sessionStore = useSessionStore()
