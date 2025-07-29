@@ -8,15 +8,29 @@
       </div>
       
       <div class="header-actions">
+        <!-- 按钮 a: 最大化/恢复正常大小 -->
         <a-button 
+          v-if="chatPanelMode !== 'hidden'"
           type="text" 
           size="small" 
-          @click="toggleChatPanelMode"
-          :title="getChatPanelButtonTooltip()"
+          @click="toggleMaximize"
+          :title="chatPanelMode === 'normal' ? '最大化聊天面板' : '恢复正常大小'"
         >
           <template #icon>
             <icon-fullscreen v-if="chatPanelMode === 'normal'" />
-            <icon-fullscreen-exit v-else-if="chatPanelMode === 'expanded'" />
+            <icon-fullscreen-exit v-else />
+          </template>
+        </a-button>
+        
+        <!-- 按钮 b: 隐藏/恢复 -->
+        <a-button 
+          type="text" 
+          size="small" 
+          @click="toggleHide"
+          :title="chatPanelMode === 'hidden' ? '恢复聊天面板' : '隐藏聊天面板'"
+        >
+          <template #icon>
+            <icon-left v-if="chatPanelMode !== 'hidden'" />
             <icon-right v-else />
           </template>
         </a-button>
@@ -188,7 +202,8 @@ import {
   IconSend,
   IconFullscreen,
   IconFullscreenExit,
-  IconRight
+  IconRight,
+  IconLeft
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
@@ -336,14 +351,22 @@ function scrollToBottom() {
   }
 }
 
-// 切换聊天面板模式
-function toggleChatPanelMode() {
-  layoutStore.toggleChatPanelMode()
+// 切换最大化状态
+function toggleMaximize() {
+  if (chatPanelMode.value === 'normal') {
+    layoutStore.setChatPanelMode('expanded')
+  } else if (chatPanelMode.value === 'expanded') {
+    layoutStore.setChatPanelMode('normal')
+  }
 }
 
-// 获取面板按钮提示
-function getChatPanelButtonTooltip() {
-  return layoutStore.getChatPanelButtonTooltip()
+// 切换隐藏状态
+function toggleHide() {
+  if (chatPanelMode.value === 'hidden') {
+    layoutStore.setChatPanelMode('normal')
+  } else {
+    layoutStore.setChatPanelMode('hidden')
+  }
 }
 </script>
 

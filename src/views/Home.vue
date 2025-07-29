@@ -8,6 +8,16 @@
       <SessionSidebar />
     </aside>
 
+    <!-- 左边栏隐藏时的恢复按钮 -->
+    <div 
+      v-show="!sidebarVisible" 
+      class="sidebar-toggle-btn"
+      @click="toggleSidebar"
+      title="显示侧边栏"
+    >
+      <icon-right />
+    </div>
+
     <!-- 中央对话树区域 -->
     <main 
       v-show="showTreeArea" 
@@ -26,6 +36,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
+import { IconRight } from '@arco-design/web-vue/es/icon'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import DialogTreeVisualization from '@/components/DialogTreeVisualization.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
@@ -39,6 +50,11 @@ const layoutStore = useLayoutStore()
 const sidebarVisible = computed(() => layoutStore.sidebarVisible)
 const showTreeArea = computed(() => layoutStore.showTreeArea)
 const cssVariables = computed(() => layoutStore.cssVariables)
+
+// 切换侧边栏
+function toggleSidebar() {
+  layoutStore.toggleSidebar()
+}
 
 // 初始化数据
 onMounted(async () => {
@@ -88,6 +104,37 @@ onMounted(async () => {
   background-color: #fff;
   border-left: 1px solid #e5e5e5;
   overflow: hidden;
+}
+
+// 左边栏恢复按钮
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  color: #666;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #f5f5f5;
+    color: #1890ff;
+    border-color: #1890ff;
+    transform: scale(1.05);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 // 展开模式下的布局调整
