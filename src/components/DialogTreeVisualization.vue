@@ -272,27 +272,6 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
 
-  // Summary框 - 默认不可见
-  const summaryGroup = nodeEnter.append('g')
-    .attr('class', 'summary-container')
-    .style('opacity', 0)
-    .style('pointer-events', 'none')
-
-  // Summary背景
-  summaryGroup.append('rect')
-    .attr('class', 'summary-background')
-    .attr('rx', 6)
-    .attr('ry', 6)
-    .attr('width', 200) // 固定宽度
-    .attr('x', -100) // 居中
-    .attr('y', 25) // 位于节点下方
-
-  // Summary文本
-  summaryGroup.append('text')
-    .attr('class', 'summary-text')
-    .attr('text-anchor', 'middle')
-    .attr('y', 40)
-
   // 更新现有节点
   const nodeUpdate = nodeEnter.merge(nodeSelection)
     .transition()
@@ -302,9 +281,6 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
 
   // 更新文本内容和样式
   updateNodeTexts(nodeUpdate)
-  
-  // 更新Summary内容
-  updateSummaryTexts(nodeEnter.merge(nodeSelection))
   
   // 添加交互事件
   addNodeInteractions(nodeEnter.merge(nodeSelection))
@@ -316,90 +292,78 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
 // 更新节点文本
 function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
   selection.select('.text-content')
-    .text(d => {
-      // 节点本身显示简化的对话标题或序号
-      const title = d.data.title || `对话 ${d.data.conversationId}`
-      return title.length > 15 ? title.substring(0, 15) + '...' : title
-    })
     .each(function(d) {
-      const text = d3.select(this)
-      const title = d.data.title || `对话 ${d.data.conversationId}`
+      const textElement = d3.select(this)
+      const summary = d.data.summary || d.data.content || 'No summary'
       
-      // 如果标题太长，进行换行处理
-      if (title.length > 15) {
-        const words = title.split('')
-        text.text('')
-        
-        let tspan = text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', '0em')
-        
-        let line = ''
-        for (let i = 0; i < Math.min(words.length, 30); i++) {
-          if (i > 0 && i % 15 === 0) {
-            tspan.text(line)
-            tspan = text.append('tspan')
-              .attr('x', 0)
-              .attr('dy', '1.2em')
-            line = words[i]
-          } else {
-            line += words[i]
-          }
+      // 清空现有文本
+      textElement.text('')
+      textElement.attr('dy', null)
+      
+      // 设置基本文本属性
+      textElement
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+      
+      // 计算container参数 - 使用超保守的估算
+      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+      const usableWidth = containerWidth * 0.6 // 只使用container宽度的60%，留出40%边距
+      const maxCharsPerLine = Math.floor(usableWidth / 10) // 每字符按10px计算，非常保守
+      
+      // 确保最小字符数，但也不能太多
+      const safeMaxChars = Math.max(6, Math.min(12, maxCharsPerLine))
+      
+      // 换行处理
+      const lines: string[] = []
+      let remainingText = summary
+      
+      while (remainingText.length > 0 && lines.length < 3) {
+        if (remainingText.length <= safeMaxChars) {
+          lines.push(remainingText)
+          break
+        } else {
+          lines.push(remainingText.substring(0, safeMaxChars))
+          remainingText = remainingText.substring(safeMaxChars)
         }
-        tspan.text(line + (title.length > 30 ? '...' : ''))
       }
+      
+      // 如果还有剩余文本，在最后一行添加省略号
+      if (remainingText.length > 0 && lines.length === 3) {
+        lines[2] = lines[2].substring(0, Math.max(1, lines[2].length - 2)) + '..'
+      }
+      
+      // 渲染文本行
+      const lineHeight = 14
+      const totalHeight = lines.length * lineHeight
+      const startY = -totalHeight / 2 + lineHeight / 2
+      
+      lines.forEach((line, index) => {
+        textElement.append('tspan')
+          .attr('x', 0)
+          .attr('y', startY + index * lineHeight)
+          .text(line.trim()) // 去除可能的空格
+      })
     })
 
   // 更新文本背景
   selection.select('.text-background')
-    .each(function() {
-      const textElement = d3.select(this.parentNode).select('.text-content')
-      const bbox = (textElement.node() as SVGTextElement)?.getBBox()
-      
-      if (bbox) {
-        d3.select(this)
-          .attr('x', bbox.x - 8)
-          .attr('y', bbox.y - 4)
-          .attr('width', bbox.width + 16)
-          .attr('height', bbox.height + 8)
-      }
-    })
-}
-
-// 更新Summary文本
-function updateSummaryTexts(selection: d3.Selection<SVGGElement, d3.HierarchyNode<ConversationTreeNode>, SVGGElement, unknown>) {
-  selection.select('.summary-text')
-    .text(d => {
-      const summary = d.data.summary || d.data.content || 'No summary'
-      return summary.length > 20 ? summary.substring(0, 20) + '...' : summary
-    })
     .each(function(d) {
-      const text = d3.select(this)
       const summary = d.data.summary || d.data.content || 'No summary'
       
-      // 如果摘要太长，进行换行处理
-      if (summary.length > 20) {
-        const words = summary.split('')
-        text.text('')
-        
-        let tspan = text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', '0em')
-        
-        let line = ''
-        for (let i = 0; i < Math.min(words.length, 30); i++) {
-          if (i > 0 && i % 20 === 0) {
-            tspan.text(line)
-            tspan = text.append('tspan')
-              .attr('x', 0)
-              .attr('dy', '1.2em')
-            line = words[i]
-          } else {
-            line += words[i]
-          }
-        }
-        tspan.text(line + (summary.length > 30 ? '...' : ''))
-      }
+      // 计算container尺寸
+      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+      const usableWidth = containerWidth * 0.6
+      const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+      const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+      
+      const width = containerWidth
+      const height = Math.max(28, estimatedLines * 16 + 16) // 进一步增加高度边距
+      
+      d3.select(this)
+        .attr('x', -width / 2)
+        .attr('y', -height / 2)
+        .attr('width', width)
+        .attr('height', height)
     })
 }
 
@@ -422,9 +386,9 @@ function addNodeInteractions(selection: d3.Selection<SVGGElement, d3.HierarchyNo
 function updateNodeStyles() {
   if (!g) return
 
-  g.selectAll<SVGCircleElement, d3.HierarchyNode<ConversationTreeNode>>('.node-circle')
+  g.selectAll<SVGGElement, d3.HierarchyNode<ConversationTreeNode>>('.node')
     .each(function(d) {
-      const circle = d3.select(this)
+      const node = d3.select(this)
       const conversationId = d.data.conversationId
       
       // 确定节点颜色
@@ -437,10 +401,15 @@ function updateNodeStyles() {
         colorClass = 'starred'
       }
       
-      // 移除所有颜色类
+      // 更新圆圈样式
+      const circle = node.select('.node-circle')
       circle.classed('current ancestor starred default', false)
-      // 添加当前颜色类
       circle.classed(colorClass, true)
+      
+      // 更新文本背景边框颜色
+      const textBackground = node.select('.text-background')
+      textBackground.classed('current ancestor starred default', false)
+      textBackground.classed(colorClass, true)
     })
 }
 
@@ -462,10 +431,10 @@ function handleNodeMouseEnter(event: MouseEvent, node: ConversationTreeNode) {
   hoverTimeout = setTimeout(() => {
     if (hoverId === node.id) {
       // 显示当前节点的summary框
-      g.selectAll<SVGGElement, d3.HierarchyNode<ConversationTreeNode>>('.node')
-        .filter(d => d.data.id === node.id)
-        .select('.summary-container')
-        .style('opacity', 1)
+      // g.selectAll<SVGGElement, d3.HierarchyNode<ConversationTreeNode>>('.node')
+      //   .filter(d => d.data.id === node.id)
+      //   .select('.summary-container')
+      //   .style('opacity', 1)
     }
   }, 500) // 0.5秒延迟
 }
@@ -479,8 +448,8 @@ function handleNodeMouseLeave() {
   hoverId = null
   
   // 隐藏所有summary框
-  g.selectAll('.summary-container')
-    .style('opacity', 0)
+  // g.selectAll('.summary-container')
+  //   .style('opacity', 0)
 }
 
 // 显示提示
@@ -669,27 +638,30 @@ function handleResize() {
     fill: rgba(255, 255, 255, 0.9);
     stroke: #ddd;
     stroke-width: 1px;
+    
+    &.current {
+      stroke: #0961d5; // 蓝色
+      stroke-width: 2px;
+    }
+    
+    &.ancestor {
+      stroke: #89ccff; // 青色(cyan)
+      stroke-width: 2px;
+    }
+    
+    &.starred {
+      stroke: #bd9035; // 黄色
+      stroke-width: 2px;
+    }
+    
+    &.default {
+      stroke: #ddd; // 灰色
+      stroke-width: 1px;
+    }
   }
   
   .text-content {
     fill: #333;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .summary-container {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .summary-background {
-    fill: rgba(255, 255, 255, 0.3);
-    stroke: #fff;
-    stroke-width: 1px;
-  }
-
-  .summary-text {
-    fill: #fff;
     font-size: 12px;
     font-weight: 500;
   }
@@ -703,11 +675,6 @@ function handleResize() {
     .text-background {
       fill: rgba(255, 255, 255, 1);
       stroke: #999;
-    }
-
-    .summary-container {
-      opacity: 1;
-      pointer-events: auto;
     }
   }
 }
