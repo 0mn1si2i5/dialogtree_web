@@ -22,8 +22,8 @@ export const sessionApi = {
   },
 
   // 更新会话
-  async updateSession(sessionId: number, data: { title: string; categoryID: number }): Promise<{ session: Session; categoryName: string }> {
-    const response = await http.put<ApiResponse<{ session: Session; categoryName: string }>>(`/sessions/${sessionId}`, data)
+  async updateSession(sessionId: number, data: { title: string; categoryID: number }): Promise<{ categoryId: number; categoryName: string; sessionId: number; title: string }> {
+    const response = await http.put<ApiResponse<{ categoryId: number; categoryName: string; sessionId: number; title: string }>>(`/sessions/${sessionId}`, data)
     return response.data.data
   },
 

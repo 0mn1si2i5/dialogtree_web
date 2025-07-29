@@ -120,7 +120,7 @@ let zoom: d3.ZoomBehavior<SVGElement, unknown>
 const nodeRadius = 8
 const nodeSpacing = { x: 200, y: 80 }
 let hoverId: number | null = null
-let hoverTimeout: NodeJS.Timeout | null = null
+let hoverTimeout: ReturnType<typeof setTimeout> | null = null
 
 // ===== 初始化D3 =====
 onMounted(() => {
@@ -138,9 +138,14 @@ onUnmounted(() => {
 })
 
 // 监听数据变化
-watch(conversationTree, () => {
+watch(conversationTree, (newTree) => {
   nextTick(() => {
-    renderTree()
+    if (!newTree) {
+      // 如果数据为空，清空所有D3渲染内容
+      clearTree()
+    } else {
+      renderTree()
+    }
   })
 }, { deep: true })
 
@@ -179,6 +184,15 @@ function initializeD3() {
       // 增大同级节点间距离
       return a.parent === b.parent ? 1.2 : 2
     })
+}
+
+// ===== 清空树形图 =====
+function clearTree() {
+  if (!g) return
+  
+  // 移除所有节点和连接线
+  g.selectAll('.node').remove()
+  g.selectAll('.link').remove()
 }
 
 // ===== 渲染树形图 =====
@@ -225,10 +239,12 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
       const target = d.target
       
       // 使用贝塞尔曲线连接节点
-      return `M${source.x},${source.y}
-              C${source.x},${(source.y + target.y) / 2}
-               ${target.x},${(source.y + target.y) / 2}
-               ${target.x},${target.y}`
+      const sourceY = source.y || 0
+      const targetY = target.y || 0
+      return `M${source.x},${sourceY}
+              C${source.x},${(sourceY + targetY) / 2}
+               ${target.x},${(sourceY + targetY) / 2}
+               ${target.x},${targetY}`
     })
 }
 

@@ -123,6 +123,7 @@ onMounted(async () => {
   height: 100vh;
   background-color: #f5f5f5;
   overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-area {
@@ -131,6 +132,7 @@ onMounted(async () => {
   border-right: 1px solid #e5e5e5;
   overflow: hidden;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tree-area {
@@ -138,6 +140,7 @@ onMounted(async () => {
   background-color: #fafafa;
   overflow: hidden;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chat-area {
@@ -146,6 +149,7 @@ onMounted(async () => {
   border-left: 1px solid #e5e5e5;
   overflow: hidden;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // 左边栏恢复按钮

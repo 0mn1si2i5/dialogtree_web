@@ -39,6 +39,7 @@ export const useSessionStore = defineStore('session', () => {
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取会话列表失败'
       console.error('Failed to fetch sessions:', err)
+      throw err
     } finally {
       loading.value = false
     }
@@ -110,18 +111,12 @@ export const useSessionStore = defineStore('session', () => {
     try {
       loading.value = true
       error.value = ''
+      
+      // 调用API更新会话
       const result = await sessionApi.updateSession(sessionId, data)
       
-      // 更新本地会话数据
-      const sessionIndex = sessions.value.findIndex(s => s.id === sessionId)
-      if (sessionIndex !== -1) {
-        sessions.value[sessionIndex] = result.session
-      }
-      
-      // 如果是当前会话，更新当前会话信息
-      if (currentSessionId.value === sessionId) {
-        currentSession.value = result.session
-      }
+      // 重新获取所有sessions以确保数据同步
+      await fetchSessions()
       
       return result
     } catch (err) {
@@ -138,16 +133,19 @@ export const useSessionStore = defineStore('session', () => {
     try {
       loading.value = true
       error.value = ''
-      const result = await sessionApi.getSessionsByCategory(categoryId)
       
-      // 更新相应分类的会话数据
-      const categorySessionIds = new Set(result.sessions.map(s => s.id))
+      // 简化逻辑：直接重新获取所有会话数据，避免复杂的本地状态管理
+      await fetchSessions()
       
-      // 移除其他分类的会话，添加当前分类的会话
-      sessions.value = sessions.value.filter(s => s.categoryID !== categoryId)
-      sessions.value.push(...result.sessions)
+      // 返回筛选后的结果
+      const categoryName = categories.value.find(c => c.id === categoryId)?.name || '未知分类'
+      const categorySessions = sessions.value.filter(s => s.categoryID === categoryId)
       
-      return result
+      return {
+        categoryId,
+        categoryName,
+        sessions: categorySessions
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取分类会话失败'
       console.error('Failed to fetch sessions by category:', err)

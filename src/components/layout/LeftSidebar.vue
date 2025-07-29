@@ -10,7 +10,7 @@
     
     <!-- 标签页工具栏 -->
     <div class="sidebar-header">
-      <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs">
+      <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs" type="text" hide-content>
         <a-tab-pane key="sessions" title="会话列表" />
         <a-tab-pane key="categories" title="分类管理" />
       </a-tabs>
@@ -258,11 +258,11 @@ async function selectSession(sessionId: number) {
 // 分类筛选变化
 async function handleCategoryChange(categoryId: number | string) {
   if (categoryId !== 'all') {
-    try {
-      await sessionStore.fetchSessionsByCategory(categoryId as number)
-    } catch (error) {
-      // 降级处理已在store中实现
-    }
+    // 直接设置选中的分类ID，让计算属性自动过滤
+    sessionStore.setSelectedCategory(categoryId as number)
+  } else {
+    // 显示所有分类
+    sessionStore.setSelectedCategory(null)
   }
 }
 
@@ -534,7 +534,7 @@ function resetRenameCategoryForm() {
   align-items: center;
   justify-content: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid #fff;
   background-color: #fff;
   flex-shrink: 0;
   min-height: 48px;
@@ -562,8 +562,9 @@ function resetRenameCategoryForm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px;
+  padding: 0 45px;
   border-bottom: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
   width: 100%;
@@ -614,7 +615,6 @@ function resetRenameCategoryForm() {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 0;
   width: 100%;
   box-sizing: border-box;
 }

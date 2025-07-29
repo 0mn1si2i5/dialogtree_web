@@ -86,11 +86,26 @@ export const useDialogStore = defineStore('dialog', () => {
 
   // ===== Actions =====
 
+  // 清空对话状态
+  function clearDialogState() {
+    dialogTreeData.value = null
+    conversationTree.value = null
+    selectedConversationId.value = null
+    ancestorConversations.value = []
+    // 清空流式状态
+    isStreaming.value = false
+    streamingContent.value = ''
+    streamingError.value = ''
+  }
+
   // 获取会话的对话树
   async function fetchDialogTree(sessionId: number) {
     try {
       loading.value = true
       error.value = ''
+      
+      // 首先清空之前的所有对话状态
+      clearDialogState()
       
       const data = await sessionApi.getSessionTree(sessionId)
       dialogTreeData.value = data
@@ -98,17 +113,24 @@ export const useDialogStore = defineStore('dialog', () => {
       // 转换为前端对话树结构
       conversationTree.value = transformDialogTreeToConversationTree(data.dialogTree)
       
-      // 清除之前的选中状态
+      // 清除之前的选中状态和聊天历史
       selectedConversationId.value = null
       ancestorConversations.value = []
+      
+      // 如果没有对话树数据，确保聊天历史为空
+      if (!data.dialogTree || data.dialogTree.length === 0) {
+        ancestorConversations.value = []
+      }
       
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取对话树失败'
       console.error('Failed to fetch dialog tree:', err)
       
-      // 清空状态
+      // 清空所有状态
       dialogTreeData.value = null
       conversationTree.value = null
+      selectedConversationId.value = null
+      ancestorConversations.value = []
     } finally {
       loading.value = false
     }
@@ -302,6 +324,7 @@ export const useDialogStore = defineStore('dialog', () => {
     hasDialogTree,
     
     // Actions
+    clearDialogState,
     fetchDialogTree,
     createDialog,
     fetchAncestors,
