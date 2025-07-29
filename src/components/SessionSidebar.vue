@@ -62,8 +62,8 @@
               </div>
             </div>
             
-            <a-dropdown trigger="click" @select="(key) => handleSessionAction(key, session)">
-              <a-button type="text" size="mini" @click.stop class="session-more-btn">
+            <a-dropdown trigger="click" @select="(key: string) => handleSessionAction(key, session)">
+              <a-button type="text" size="mini" @click.stop>
                 <template #icon>
                   <icon-more />
                 </template>
@@ -110,7 +110,7 @@
               </div>
             </div>
             
-            <a-dropdown trigger="click" @select="(key) => handleCategoryAction(key, category)">
+            <a-dropdown trigger="click" @select="(key: string) => handleCategoryAction(key, category)">
               <a-button type="text" size="mini">
                 <template #icon>
                   <icon-more />
@@ -593,6 +593,9 @@ function resetRenameCategoryForm() {
   flex-direction: column;
   height: 100%;
   background-color: #fff;
+  overflow-x: hidden; // 禁止水平滚动
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sidebar-header {
@@ -603,10 +606,13 @@ function resetRenameCategoryForm() {
   border-bottom: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sidebar-tabs {
   flex: 0 0 auto;
+  width: 100%;
 }
 
 .tab-content {
@@ -614,6 +620,8 @@ function resetRenameCategoryForm() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .category-filter {
@@ -622,19 +630,25 @@ function resetRenameCategoryForm() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .category-actions {
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .session-list,
 .category-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; // 禁止水平滚动
   padding: 8px 0;
-  width: 100%; // 确保列表容器占满宽度
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .session-item,
@@ -645,8 +659,11 @@ function resetRenameCategoryForm() {
   padding: 12px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
-  min-height: 60px; // 确保有足够高度
-  width: 100%; // 确保占满宽度
+  min-height: 60px;
+  // 正确的宽度控制
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 
   &:hover {
     background-color: #f5f5f5;
@@ -661,40 +678,36 @@ function resetRenameCategoryForm() {
 .session-info,
 .category-info {
   flex: 1;
-  min-width: 0;
+  min-width: 0; // 允许收缩
+  overflow: hidden;
+  padding-right: 8px;
+  // 强制文本换行和裁剪
+  word-break: break-all;
+  word-wrap: break-word;
+  box-sizing: border-box;
 }
 
-// 确保下拉按钮靠右
+// 确保下拉按钮固定位置和大小
 .category-item .arco-dropdown,
 .session-item .arco-dropdown {
   flex-shrink: 0;
-  margin-left: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-// 会话更多按钮样式
-.session-more-btn {
-  opacity: 1 !important;
-  visibility: visible !important;
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  border: 1px solid #d9d9d9 !important;
-  transition: all 0.2s;
-  
-  &:hover {
-    opacity: 1 !important;
-    background-color: rgba(0, 0, 0, 0.08) !important;
-    border-color: #40a9ff !important;
-  }
-  
-  // 确保图标可见
-  .arco-icon {
-    color: #666 !important;
-    font-size: 12px !important;
-  }
-}
-
-.session-item:hover .session-more-btn {
-  opacity: 1 !important;
-  background-color: rgba(0, 0, 0, 0.06) !important;
+// 确保按钮本身可点击
+.category-item .arco-dropdown .arco-btn,
+.session-item .arco-dropdown .arco-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  min-width: 0;
 }
 
 .session-title,
@@ -704,6 +717,11 @@ function resetRenameCategoryForm() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  // 严格宽度控制
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; // 允许收缩
 }
 
 .session-meta {
@@ -712,21 +730,45 @@ function resetRenameCategoryForm() {
   gap: 2px;
   font-size: 12px;
   color: #666;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  min-width: 0; // 允许收缩
 }
 
 .session-time {
   color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .session-summary {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; // 允许收缩
 }
 
 .category-count {
   font-size: 12px;
   color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+// 修复arco-spin导致的宽度问题
+:deep(.arco-spin) {
+  display: block !important; // 覆盖默认的inline-block
+  width: 100% !important;
 }
 
 // 危险操作样式
