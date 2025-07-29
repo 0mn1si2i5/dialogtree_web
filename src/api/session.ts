@@ -21,6 +21,12 @@ export const sessionApi = {
     await http.delete(`/sessions/${sessionId}`)
   },
 
+  // 更新会话
+  async updateSession(sessionId: number, data: { title: string; categoryID: number }): Promise<{ session: Session; categoryName: string }> {
+    const response = await http.put<ApiResponse<{ session: Session; categoryName: string }>>(`/sessions/${sessionId}`, data)
+    return response.data.data
+  },
+
   // 获取会话的对话树
   async getSessionTree(sessionId: number): Promise<DialogTreeData> {
     const response = await http.get<ApiResponse<DialogTreeData>>(`/sessions/${sessionId}/tree`)

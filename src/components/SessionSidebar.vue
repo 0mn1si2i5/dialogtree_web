@@ -63,7 +63,7 @@
             </div>
             
             <a-dropdown trigger="click" @select="(key) => handleSessionAction(key, session)">
-              <a-button type="text" size="mini" @click.stop>
+              <a-button type="text" size="mini" @click.stop class="session-more-btn">
                 <template #icon>
                   <icon-more />
                 </template>
@@ -177,6 +177,64 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- 会话重命名模态框 -->
+    <a-modal
+      v-model:visible="showRenameSessionModal"
+      title="重命名会话"
+      @ok="handleRenameSession"
+      @cancel="resetRenameSessionForm"
+    >
+      <a-form :model="renameSessionForm" layout="vertical">
+        <a-form-item label="会话标题" required>
+          <a-input 
+            v-model="renameSessionForm.title" 
+            placeholder="请输入新的会话标题"
+            @keyup.enter="handleRenameSession"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- 会话修改分类模态框 -->
+    <a-modal
+      v-model:visible="showMoveSessionModal"
+      title="修改分类"
+      @ok="handleMoveSession"
+      @cancel="resetMoveSessionForm"
+    >
+      <a-form :model="moveSessionForm" layout="vertical">
+        <a-form-item label="选择分类" required>
+          <a-select v-model="moveSessionForm.categoryID" placeholder="选择新的分类">
+            <a-option 
+              v-for="category in categories"
+              :key="category.id"
+              :value="category.id"
+            >
+              {{ category.name }}
+            </a-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- 分类重命名模态框 -->
+    <a-modal
+      v-model:visible="showRenameCategoryModal"
+      title="重命名分类"
+      @ok="handleRenameCategory"
+      @cancel="resetRenameCategoryForm"
+    >
+      <a-form :model="renameCategoryForm" layout="vertical">
+        <a-form-item label="分类名称" required>
+          <a-input 
+            v-model="renameCategoryForm.name" 
+            placeholder="请输入新的分类名称"
+            @keyup.enter="handleRenameCategory"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -200,6 +258,9 @@ const activeTab = ref('sessions')
 const selectedCategoryId = ref<number | string | null>(null)
 const showCreateSessionModal = ref(false)
 const showCreateCategoryModal = ref(false)
+const showRenameSessionModal = ref(false)
+const showMoveSessionModal = ref(false)
+const showRenameCategoryModal = ref(false)
 
 // 表单数据
 const createSessionForm = ref({
@@ -208,6 +269,21 @@ const createSessionForm = ref({
 })
 
 const createCategoryForm = ref({
+  name: '',
+})
+
+const renameSessionForm = ref({
+  sessionId: null as number | null,
+  title: '',
+})
+
+const moveSessionForm = ref({
+  sessionId: null as number | null,
+  categoryID: null as number | null,
+})
+
+const renameCategoryForm = ref({
+  categoryId: null as number | null,
   name: '',
 })
 
@@ -267,12 +343,10 @@ function handleCategoryClear() {
 function handleSessionAction(action: string, session: Session) {
   switch (action) {
     case 'rename':
-      // TODO: 实现重命名功能
-      Message.info('重命名功能待实现')
+      showRenameSessionDialog(session)
       break
     case 'move':
-      // TODO: 实现移动分类功能
-      Message.info('移动分类功能待实现')
+      showMoveSessionDialog(session)
       break
     case 'delete':
       confirmDeleteSession(session)
@@ -284,8 +358,7 @@ function handleSessionAction(action: string, session: Session) {
 function handleCategoryAction(action: string, category: Category) {
   switch (action) {
     case 'rename':
-      // TODO: 实现重命名功能
-      Message.info('重命名功能待实现')
+      showRenameCategoryDialog(category)
       break
     case 'delete':
       confirmDeleteCategory(category)
@@ -386,6 +459,132 @@ function resetCreateCategoryForm() {
   }
 }
 
+// 显示会话重命名对话框
+function showRenameSessionDialog(session: Session) {
+  renameSessionForm.value = {
+    sessionId: session.id,
+    title: session.title,
+  }
+  showRenameSessionModal.value = true
+}
+
+// 显示会话移动分类对话框
+function showMoveSessionDialog(session: Session) {
+  moveSessionForm.value = {
+    sessionId: session.id,
+    categoryID: session.categoryID,
+  }
+  showMoveSessionModal.value = true
+}
+
+// 显示分类重命名对话框
+function showRenameCategoryDialog(category: Category) {
+  renameCategoryForm.value = {
+    categoryId: category.id,
+    name: category.name,
+  }
+  showRenameCategoryModal.value = true
+}
+
+// 处理会话重命名
+async function handleRenameSession() {
+  if (!renameSessionForm.value.title?.trim() || !renameSessionForm.value.sessionId) {
+    Message.warning('请输入会话标题')
+    return
+  }
+
+  try {
+    const sessionId = renameSessionForm.value.sessionId
+    const currentSession = sessionStore.sessions.find(s => s.id === sessionId)
+    if (!currentSession) {
+      Message.error('会话不存在')
+      return
+    }
+
+    await sessionStore.updateSession(sessionId, {
+      title: renameSessionForm.value.title.trim(),
+      categoryID: currentSession.categoryID,
+    })
+    
+    Message.success('重命名成功')
+    showRenameSessionModal.value = false
+    resetRenameSessionForm()
+  } catch (error) {
+    Message.error('重命名失败')
+  }
+}
+
+// 处理会话移动分类
+async function handleMoveSession() {
+  if (!moveSessionForm.value.categoryID || !moveSessionForm.value.sessionId) {
+    Message.warning('请选择分类')
+    return
+  }
+
+  try {
+    const sessionId = moveSessionForm.value.sessionId
+    const currentSession = sessionStore.sessions.find(s => s.id === sessionId)
+    if (!currentSession) {
+      Message.error('会话不存在')
+      return
+    }
+
+    await sessionStore.updateSession(sessionId, {
+      title: currentSession.title,
+      categoryID: moveSessionForm.value.categoryID,
+    })
+    
+    Message.success('移动成功')
+    showMoveSessionModal.value = false
+    resetMoveSessionForm()
+  } catch (error) {
+    Message.error('移动失败')
+  }
+}
+
+// 处理分类重命名
+async function handleRenameCategory() {
+  if (!renameCategoryForm.value.name?.trim() || !renameCategoryForm.value.categoryId) {
+    Message.warning('请输入分类名称')
+    return
+  }
+
+  try {
+    await sessionStore.updateCategory(
+      renameCategoryForm.value.categoryId,
+      renameCategoryForm.value.name.trim()
+    )
+    
+    Message.success('重命名成功')
+    showRenameCategoryModal.value = false
+    resetRenameCategoryForm()
+  } catch (error) {
+    Message.error('重命名失败')
+  }
+}
+
+// 重置表单
+function resetRenameSessionForm() {
+  renameSessionForm.value = {
+    sessionId: null,
+    title: '',
+  }
+}
+
+function resetMoveSessionForm() {
+  moveSessionForm.value = {
+    sessionId: null,
+    categoryID: null,
+  }
+}
+
+function resetRenameCategoryForm() {
+  renameCategoryForm.value = {
+    categoryId: null,
+    name: '',
+  }
+}
+
 </script>
 
 <style lang="less" scoped>
@@ -435,6 +634,7 @@ function resetCreateCategoryForm() {
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
+  width: 100%; // 确保列表容器占满宽度
 }
 
 .session-item,
@@ -445,6 +645,8 @@ function resetCreateCategoryForm() {
   padding: 12px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
+  min-height: 60px; // 确保有足够高度
+  width: 100%; // 确保占满宽度
 
   &:hover {
     background-color: #f5f5f5;
@@ -460,6 +662,39 @@ function resetCreateCategoryForm() {
 .category-info {
   flex: 1;
   min-width: 0;
+}
+
+// 确保下拉按钮靠右
+.category-item .arco-dropdown,
+.session-item .arco-dropdown {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+// 会话更多按钮样式
+.session-more-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s;
+  
+  &:hover {
+    opacity: 1 !important;
+    background-color: rgba(0, 0, 0, 0.08) !important;
+    border-color: #40a9ff !important;
+  }
+  
+  // 确保图标可见
+  .arco-icon {
+    color: #666 !important;
+    font-size: 12px !important;
+  }
+}
+
+.session-item:hover .session-more-btn {
+  opacity: 1 !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
 }
 
 .session-title,

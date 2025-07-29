@@ -105,6 +105,34 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
+  // 更新会话信息
+  async function updateSession(sessionId: number, data: { title: string; categoryID: number }) {
+    try {
+      loading.value = true
+      error.value = ''
+      const result = await sessionApi.updateSession(sessionId, data)
+      
+      // 更新本地会话数据
+      const sessionIndex = sessions.value.findIndex(s => s.id === sessionId)
+      if (sessionIndex !== -1) {
+        sessions.value[sessionIndex] = result.session
+      }
+      
+      // 如果是当前会话，更新当前会话信息
+      if (currentSessionId.value === sessionId) {
+        currentSession.value = result.session
+      }
+      
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '更新会话失败'
+      console.error('Failed to update session:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 根据分类获取会话
   async function fetchSessionsByCategory(categoryId: number) {
     try {
@@ -180,6 +208,7 @@ export const useSessionStore = defineStore('session', () => {
       }
       
       await fetchCategories()
+      // 删除成功后不抛出错误
     } catch (err) {
       error.value = err instanceof Error ? err.message : '删除分类失败'
       console.error('Failed to delete category:', err)
@@ -232,6 +261,7 @@ export const useSessionStore = defineStore('session', () => {
     fetchSessions,
     fetchCategories,
     createSession,
+    updateSession,
     deleteSession,
     fetchSessionsByCategory,
     createCategory,
