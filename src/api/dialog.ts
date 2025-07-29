@@ -11,7 +11,14 @@ export const dialogApi = {
     onComplete: (result: { dialogId: number; conversationId: number }) => void,
     onError: (error: string) => void
   ): Promise<void> {
+    let timeoutId: NodeJS.Timeout | null = null
+    
     try {
+      // 设置30秒超时
+      timeoutId = setTimeout(() => {
+        onError('响应超时，请重试')
+      }, 30000)
+
       const response = await fetch('/api/dialog/chat', {
         method: 'POST',
         headers: {
@@ -32,11 +39,22 @@ export const dialogApi = {
       }
 
       let buffer = ''
+      let hasReceivedDone = false
+      let lastMessageTime = Date.now()
 
       while (true) {
         const { done, value } = await reader.read()
         
-        if (done) break
+        if (done) {
+          // 如果流结束但没有收到完成信号，则报错
+          if (!hasReceivedDone) {
+            onError('流式响应意外结束')
+          }
+          break
+        }
+
+        // 更新最后接收消息的时间
+        lastMessageTime = Date.now()
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
@@ -56,6 +74,8 @@ export const dialogApi = {
               // 尝试解析JSON结构的完成数据
               const parsed = JSON.parse(content) as SSEMessage
               if (parsed.type === 'done' && parsed.data) {
+                hasReceivedDone = true
+                if (timeoutId) clearTimeout(timeoutId)
                 onComplete(parsed.data)
                 return
               }
@@ -69,6 +89,8 @@ export const dialogApi = {
     } catch (error) {
       console.error('SSE Error:', error)
       onError(error instanceof Error ? error.message : '流式响应错误')
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
     }
   },
 

@@ -27,6 +27,7 @@ export const useDialogStore = defineStore('dialog', () => {
   const isStreaming = ref(false)
   const streamingContent = ref('')
   const streamingError = ref('')
+  const pendingUserMessage = ref<string>('')
   
   const loading = ref(false)
   const error = ref('')
@@ -63,20 +64,37 @@ export const useDialogStore = defineStore('dialog', () => {
 
   // 当前聊天历史（基于祖先API数据）
   const currentChatHistory = computed(() => {
-    if (ancestorConversations.value.length === 0) return []
+    let history: ChatMessage[] = []
     
-    const history = buildChatHistoryFromAncestors(ancestorConversations.value)
+    if (ancestorConversations.value.length > 0) {
+      const chatNodes = buildChatHistoryFromAncestors(ancestorConversations.value)
+      
+      // 转换为ChatMessage格式
+      history = chatNodes.map(node => ({
+        id: node.id,
+        role: node.type,
+        content: node.content,
+        timestamp: node.createdAt,
+        conversationId: node.conversationId,
+        isStarred: node.isStarred,
+        comment: node.comment,
+      }))
+    }
     
-    // 转换为ChatMessage格式
-    return history.map(node => ({
-      id: node.id,
-      role: node.type,
-      content: node.content,
-      timestamp: node.createdAt,
-      conversationId: node.conversationId,
-      isStarred: node.isStarred,
-      comment: node.comment,
-    }))
+    // 如果有待处理的用户消息，添加到历史中
+    if (pendingUserMessage.value && isStreaming.value) {
+      history.push({
+        id: Date.now(), // 临时ID
+        role: 'user',
+        content: pendingUserMessage.value,
+        timestamp: new Date().toISOString(),
+        conversationId: 0, // 临时值
+        isStarred: false,
+        comment: '',
+      })
+    }
+    
+    return history
   })
 
   // 是否有对话树数据
@@ -96,6 +114,7 @@ export const useDialogStore = defineStore('dialog', () => {
     isStreaming.value = false
     streamingContent.value = ''
     streamingError.value = ''
+    pendingUserMessage.value = ''
   }
 
   // 获取会话的对话树
@@ -142,6 +161,7 @@ export const useDialogStore = defineStore('dialog', () => {
       isStreaming.value = true
       streamingContent.value = ''
       streamingError.value = ''
+      pendingUserMessage.value = request.content // 保存用户消息用于显示
 
       dialogApi.createDialog(
         request,
@@ -153,6 +173,7 @@ export const useDialogStore = defineStore('dialog', () => {
         async (result) => {
           try {
             isStreaming.value = false
+            pendingUserMessage.value = '' // 清空待处理消息
             
             // 重新获取对话树以更新显示
             if (dialogTreeData.value) {
@@ -166,12 +187,15 @@ export const useDialogStore = defineStore('dialog', () => {
             resolve(result)
           } catch (err) {
             console.error('Failed to refresh dialog tree after creation:', err)
+            isStreaming.value = false
+            pendingUserMessage.value = ''
             reject(err)
           }
         },
         // onError
         (errorMsg: string) => {
           isStreaming.value = false
+          pendingUserMessage.value = ''
           streamingError.value = errorMsg
           reject(new Error(errorMsg))
         }
@@ -284,6 +308,7 @@ export const useDialogStore = defineStore('dialog', () => {
     isStreaming.value = false
     streamingContent.value = ''
     streamingError.value = ''
+    pendingUserMessage.value = ''
   }
 
   // 清除错误状态
@@ -313,6 +338,7 @@ export const useDialogStore = defineStore('dialog', () => {
     isStreaming,
     streamingContent,
     streamingError,
+    pendingUserMessage,
     loading,
     error,
     
