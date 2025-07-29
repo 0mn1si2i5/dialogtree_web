@@ -84,7 +84,19 @@
                   <template #icon>
                     <icon-branch />
                   </template>
-
+                </a-button>
+                
+                <a-button 
+                  v-if="message.role === 'assistant'"
+                  type="text" 
+                  size="mini"
+                  @click="copyMessageContent(message.content)"
+                  title="复制内容"
+                  class="copy-button"
+                >
+                  <template #icon>
+                    <icon-copy />
+                  </template>
                 </a-button>
               </div>
             </div>
@@ -122,7 +134,7 @@
         <a-textarea
           v-model="inputMessage"
           placeholder="输入您的问题..."
-          :auto-size="{ minRows: 1, maxRows: 4 }"
+          :auto-size="{ minRows: 1, maxRows: 12}"
           :disabled="isStreaming"
           @keydown.ctrl.enter="sendMessage"
           @keydown.meta.enter="sendMessage"
@@ -193,7 +205,8 @@ import {
   IconBranch, 
   IconSend,
   IconFullscreen,
-  IconFullscreenExit
+  IconFullscreenExit,
+  IconCopy
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
@@ -333,6 +346,17 @@ function continueFromMessage(message: ChatMessage) {
   }
 }
 
+// 复制消息内容到剪贴板
+async function copyMessageContent(content: string) {
+  try {
+    await navigator.clipboard.writeText(content)
+    Message.success('内容已复制到剪贴板')
+  } catch (error) {
+    console.error('复制失败:', error)
+    Message.error('复制失败，请手动复制')
+  }
+}
+
 // 滚动到底部
 function scrollToBottom() {
   if (messagesRef.value) {
@@ -368,10 +392,12 @@ function toggleMaximize() {
   border-bottom: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
+  height: 65px;
 }
 
 .header-title {
   font-weight: 500;
+  font-size: 16px;
   color: #333;
 }
 
@@ -504,6 +530,7 @@ function toggleMaximize() {
   .message-item:hover & {
     opacity: 1;
   }
+  
 }
 
 .message-time {

@@ -4,13 +4,13 @@
     <div class="tree-toolbar">
       <div class="toolbar-left">
         <a-button-group size="small">
-          <a-button @click="fitToScreen">
+          <a-button @click="fitToScreen" type="text">
             <template #icon>
               <icon-fullscreen />
             </template>
             适应屏幕
           </a-button>
-          <a-button @click="resetZoom">
+          <a-button @click="resetZoom" type="text">
             <template #icon>
               <icon-refresh />
             </template>
@@ -21,24 +21,24 @@
       
       <div class="toolbar-right">
         <!-- 节点颜色图例 -->
-        <div class="color-legend">
-          <div class="legend-item">
-            <div class="legend-color current"></div>
-            <span>当前选中</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color ancestor"></div>
-            <span>祖先路径</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color starred"></div>
-            <span>已收藏</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color default"></div>
-            <span>普通节点</span>
-          </div>
-        </div>
+<!--        <div class="color-legend">-->
+<!--          <div class="legend-item">-->
+<!--            <div class="legend-color current"></div>-->
+<!--            <span>当前选中</span>-->
+<!--          </div>-->
+<!--          <div class="legend-item">-->
+<!--            <div class="legend-color ancestor"></div>-->
+<!--            <span>祖先路径</span>-->
+<!--          </div>-->
+<!--          <div class="legend-item">-->
+<!--            <div class="legend-color starred"></div>-->
+<!--            <span>已收藏</span>-->
+<!--          </div>-->
+<!--          <div class="legend-item">-->
+<!--            <div class="legend-color default"></div>-->
+<!--            <span>普通节点</span>-->
+<!--          </div>-->
+<!--        </div>-->
       </div>
     </div>
 
@@ -232,19 +232,44 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
     .attr('stroke-width', 2)
     // .attr('marker-end', 'url(#arrowhead)') // 移除箭头
 
-  // 更新连接线路径
+  // 更新连接线路径 - 连接到容器边缘
   linkEnter.merge(linkSelection)
     .attr('d', d => {
       const source = d.source
       const target = d.target
       
-      // 使用贝塞尔曲线连接节点
-      const sourceY = source.y || 0
-      const targetY = target.y || 0
-      return `M${source.x},${sourceY}
-              C${source.x},${(sourceY + targetY) / 2}
-               ${target.x},${(sourceY + targetY) / 2}
-               ${target.x},${targetY}`
+      // 计算容器尺寸
+      const getContainerBounds = (node: any) => {
+        const summary = node.data.summary || node.data.content || 'No summary'
+        const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+        const usableWidth = containerWidth * 0.6
+        const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+        const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+        const height = Math.max(28, estimatedLines * 16 + 16)
+        
+        return {
+          width: containerWidth,
+          height: height,
+          x: node.x || 0,
+          y: node.y || 0
+        }
+      }
+      
+      const sourceBounds = getContainerBounds(source)
+      const targetBounds = getContainerBounds(target)
+      
+      // 计算连接点（从容器底部到容器顶部）
+      const sourceX = sourceBounds.x
+      const sourceY = sourceBounds.y + sourceBounds.height / 2  // 源容器底部
+      
+      const targetX = targetBounds.x
+      const targetY = targetBounds.y - targetBounds.height / 2  // 目标容器顶部
+      
+      // 使用贝塞尔曲线连接容器
+      return `M${sourceX},${sourceY}
+              C${sourceX},${(sourceY + targetY) / 2}
+               ${targetX},${(sourceY + targetY) / 2}
+               ${targetX},${targetY}`
     })
 }
 
@@ -267,10 +292,7 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('transform', d => `translate(${d.x},${d.y})`)
     .style('opacity', 0)
 
-  // 添加节点圆圈
-  nodeEnter.append('circle')
-    .attr('r', nodeRadius)
-    .attr('class', d => `node-circle ${d.data.type}`)
+  // 删除节点圆圈 - 不再需要
 
   // 添加节点文本
   const textGroup = nodeEnter.append('g')
@@ -417,10 +439,7 @@ function updateNodeStyles() {
         colorClass = 'starred'
       }
       
-      // 更新圆圈样式
-      const circle = node.select('.node-circle')
-      circle.classed('current ancestor starred default', false)
-      circle.classed(colorClass, true)
+      // 圆形节点已删除，不需要更新圆圈样式
       
       // 更新文本背景边框颜色
       const textBackground = node.select('.text-background')
@@ -558,7 +577,17 @@ function handleResize() {
   background-color: #fff;
   border-bottom: 1px solid #e5e5e5;
   flex-shrink: 0;
+  height: 65px;
+
+  .toolbar-left {
+    width: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
+
+
 
 .color-legend {
   display: flex;
@@ -613,42 +642,7 @@ function handleResize() {
 
 // D3节点样式
 :deep(.node) {
-  .node-circle {
-    fill: var(--node-default);
-    stroke: var(--node-default);
-    stroke-width: 2px;
-    transition: all 0.3s ease;
-    
-    &.current {
-      fill: var(--node-current);
-      stroke: var(--node-current);
-      stroke-width: 3px;
-    }
-    
-    &.ancestor {
-      fill: var(--node-ancestor);
-      stroke: var(--node-ancestor);
-      stroke-width: 3px;
-    }
-    
-    &.starred {
-      fill: var(--node-starred);
-      stroke: var(--node-starred);
-      stroke-width: 3px;
-    }
-    
-    &.user {
-      // 用户问题节点样式
-    }
-    
-    &.assistant {
-      // AI回答节点样式
-    }
-    
-    &.conversation {
-      // 完整对话节点样式（默认样式即可）
-    }
-  }
+  // 圆形节点相关样式已删除
   
   .text-background {
     fill: rgba(255, 255, 255, 0.9);
@@ -683,14 +677,10 @@ function handleResize() {
   }
   
   &:hover {
-    .node-circle {
-      stroke-width: 4px;
-      filter: brightness(1.1);
-    }
-    
     .text-background {
       fill: rgba(255, 255, 255, 1);
       stroke: #999;
+      stroke-width: 2px;
     }
   }
 }

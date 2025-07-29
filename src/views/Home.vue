@@ -2,18 +2,20 @@
   <div class="layout-container" :style="cssVariables">
     <!-- 左侧边栏 -->
     <aside 
-      v-show="sidebarVisible" 
       class="sidebar-area"
+      :class="{ 'sidebar-hidden': !sidebarVisible }"
     >
-      <LeftSidebar />
-      
-      <!-- 左边栏隐藏按钮 -->
-      <div 
-        class="sidebar-hide-btn"
-        @click="toggleSidebar"
-        title="隐藏侧边栏"
-      >
-        <icon-left />
+      <div v-show="sidebarVisible" class="sidebar-content">
+        <LeftSidebar />
+        
+        <!-- 左边栏隐藏按钮 -->
+        <div 
+          class="sidebar-hide-btn"
+          @click="toggleSidebar"
+          title="隐藏侧边栏"
+        >
+          <icon-left />
+        </div>
       </div>
     </aside>
 
@@ -133,6 +135,17 @@ onMounted(async () => {
   overflow: hidden;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &.sidebar-hidden {
+    border-right: none;
+    background-color: transparent;
+  }
+}
+
+.sidebar-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 .tree-area {

@@ -3,7 +3,9 @@
     <!-- 项目Logo区域 -->
     <div class="logo-header">
       <div class="logo-content">
-        <div class="logo-icon">🌳</div>
+        <div class="logo-icon">
+          <img src="/dt-logo.png" alt="DialogTree Logo" />
+        </div>
         <span class="logo-text">DialogTree</span>
       </div>
     </div>
@@ -536,10 +538,10 @@ function resetRenameCategoryForm() {
   align-items: center;
   justify-content: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #fff;
+  border-bottom: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
-  min-height: 48px;
+  height: 65px;
 }
 
 .logo-content {
@@ -549,8 +551,17 @@ function resetRenameCategoryForm() {
 }
 
 .logo-icon {
-  font-size: 24px;
-  line-height: 1;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 
 .logo-text {
@@ -565,8 +576,8 @@ function resetRenameCategoryForm() {
   align-items: center;
   justify-content: center;
   padding: 0 45px;
-  border-bottom: 1px solid #e5e5e5;
-  border-top: 1px solid #e5e5e5;
+  //border-bottom: 1px solid #e5e5e5;
+  //border-top: 1px solid #e5e5e5;
   background-color: #fff;
   flex-shrink: 0;
   width: 100%;
