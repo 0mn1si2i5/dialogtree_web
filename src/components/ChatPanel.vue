@@ -64,7 +64,12 @@
                   </template>
                 </a-button>
                 
-                <a-button type="text" size="mini" @click="showCommentModal(message)">
+                <a-button 
+                  type="text" 
+                  size="mini"
+                  @click="showCommentModal(message)"
+                  :class="{ commented: message.comment && message.comment.trim() }"
+                >
                   <template #icon>
                     <icon-message />
                   </template>
@@ -79,7 +84,7 @@
                   <template #icon>
                     <icon-branch />
                   </template>
-                  分叉
+
                 </a-button>
               </div>
             </div>
@@ -507,11 +512,27 @@ function toggleMaximize() {
   color: #999;
 }
 
+// 用户消息中的时间颜色调整
+.user-message .message-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .action-buttons {
   display: flex;
   gap: 4px;
   
+  // 放大按钮尺寸
+  .arco-btn {
+    font-size: 16px !important;
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
   .arco-btn.starred {
+    color: #fa8c16;
+  }
+  
+  .arco-btn.commented {
     color: #fa8c16;
   }
 }
