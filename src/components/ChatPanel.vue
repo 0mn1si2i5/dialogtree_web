@@ -45,7 +45,7 @@
           
           <div class="message-content">
             <div class="message-text">
-              {{ message.content }}
+              <MarkdownRenderer :content="message.content" />
             </div>
             <div class="message-actions">
               <div class="message-time">
@@ -98,7 +98,7 @@
           </div>
           <div class="message-content">
             <div class="message-text">
-              {{ streamingContent }}
+              <MarkdownRenderer :content="streamingContent" />
               <span class="cursor">|</span>
             </div>
           </div>
@@ -192,6 +192,7 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 // 使用stores
 const sessionStore = useSessionStore()
@@ -481,6 +482,11 @@ function toggleMaximize() {
 .message-text {
   line-height: 1.6;
   margin-bottom: 8px;
+  
+  // 确保markdown渲染器占满整个文本区域
+  .markdown-renderer {
+    width: 100%;
+  }
 }
 
 .message-actions {
