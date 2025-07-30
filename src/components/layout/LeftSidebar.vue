@@ -8,6 +8,19 @@
         </div>
         <span class="logo-text">DialogTree</span>
       </div>
+      
+      <!-- 帮助按钮 -->
+      <a-button 
+        type="text" 
+        size="small"
+        class="help-button"
+        @click="$emit('show-tutorial')"
+        :title="$t('tutorial.nav.help')"
+      >
+        <template #icon>
+          <icon-question-circle />
+        </template>
+      </a-button>
     </div>
     
     <!-- 标签页工具栏 -->
@@ -181,10 +194,16 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Message, Modal } from '@arco-design/web-vue'
 import { useSessionStore, useDialogStore, useLocaleStore } from '@/stores'
-import { IconMore } from '@arco-design/web-vue/es/icon'
+import { IconMore, IconQuestionCircle } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { Session, Category } from '@/types'
 import SessionModals from './SessionModals.vue'
+
+// 定义emit
+interface Emits {
+  (e: 'show-tutorial'): void
+}
+const emit = defineEmits<Emits>()
 
 // 使用stores和i18n
 const sessionStore = useSessionStore()
@@ -539,7 +558,7 @@ function resetRenameCategoryForm() {
 .logo-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid #e5e5e5;
   background-color: #fff;
@@ -572,6 +591,17 @@ function resetRenameCategoryForm() {
   font-weight: bold;
   color: #1890ff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.help-button {
+  color: #999;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    color: #1890ff;
+    opacity: 1;
+  }
 }
 
 .sidebar-header {

@@ -71,5 +71,83 @@ export default {
     enterNewSessionTitle: '请输入新的会话标题',
     enterNewCategoryName: '请输入新的分类名称',
     selectNewCategory: '选择新的分类'
+  },
+  
+  tutorial: {
+    nav: {
+      previous: '上一页',
+      next: '下一页',
+      start: '开始使用',
+      skip: '跳过教程',
+      help: '查看教程'
+    },
+    welcome: {
+      title: '欢迎来到 DialogTree！',
+      subtitle: '不只是聊天，这是一次有方向的思考旅程',
+      intro: {
+        title: '你是否在使用 AI 对话时也曾遇到过这些困扰：',
+        pain1: '- 想复盘过去的对话，却怎么都找不到当初的提问？',
+        pain2: '- 明明曾经获得过启发性的回答，却被淹没在杂乱的记录中？',
+        pain3: '- 想系统整理一个知识点，却发现对话上下文混乱零散？',
+        pain4: '- 想从某个对话点继续展开另一条思路，却苦于找不到入口？'
+      },
+      solution: {
+        title: 'DialogTree 正是为了解决这些烦恼而生！',
+        desc: '在这里，每一次会话都是一棵"知识树"，每一次问答，都是可延展的知识分支，逐步构建出清晰的结构与思维脉络。'
+      },
+      features: {
+        title: '从现在开始，与 Dialog Tree 一起：',
+        feature1: '像写笔记一样与 AI 深度交流',
+        feature2: '像管理思维导图一样管理你的每一次提问',
+        feature3: '构建你自己的 AI 知识图谱！'
+      }
+    },
+    basics: {
+      title: '基本布局',
+      slides: [
+        {
+          title: '左侧目录区域',
+          desc: '包括所有会话列表和会话分类管理，支持创建、重命名、删除等操作，帮您总览会话情况',
+          image: '/screenshot/1-1.png'
+        },
+        {
+          title: '中央树形显示区域',
+          desc: '随时生成当前会话的结构化图谱，附带每次对话核心摘要，帮助你构建出清晰的结构与思维脉络',
+          image: '/screenshot/1-2.png'
+        },
+        {
+          title: '右侧问答区',
+          desc: '与 AI 交互的区域，支持对话衍伸分叉、收藏、评论，支持 Markdown 格式渲染',
+          image: '/screenshot/1-3.png'
+        }
+      ]
+    },
+    advanced: {
+      title: '对话管理',
+      slides: [
+        {
+          title: '节点功能支持',
+          desc: '会话树中的每一个节点都支持摘要、收藏、评论等功能',
+          image: '/screenshot/2-1.png'
+        },
+        {
+          title: '清晰回溯路径',
+          desc: '选取任何对话节点都有清晰回溯路径',
+          image: '/screenshot/2-2.png'
+        },
+        {
+          title: '分支衍生功能',
+          desc: '选择任意对话节点都可以从当前节点衍伸新的分支会话',
+          image: '/screenshot/2-3.png'
+        }
+      ]
+    },
+    complete: {
+      title: '准备就绪！',
+      desc: '好了！以上就是关于 DialogTree 的介绍，现在您已经掌握了 DialogTree 的核心功能，请开始创建属于您的智能对话树吧！',
+      demo: '注：本站点为 Demo 站点，所有数据将在 2 小时后重置。',
+      github: '更多咨询欢迎浏览我的 GitHub',
+      githubUrl: 'https://github.com/liran906/DialogTree'
+    }
   }
 }

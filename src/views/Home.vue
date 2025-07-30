@@ -6,7 +6,7 @@
       :class="{ 'sidebar-hidden': !sidebarVisible }"
     >
       <div v-show="sidebarVisible" class="sidebar-content">
-        <LeftSidebar />
+        <LeftSidebar @show-tutorial="handleShowTutorial" />
         
         <!-- 左边栏隐藏按钮 -->
         <div 
@@ -62,21 +62,33 @@
       <icon-left />
     </div>
   </div>
+
+  <!-- 教学Modal -->
+  <TutorialModal
+    v-model:visible="showTutorial"
+    @complete="handleTutorialComplete"
+    @skip="handleTutorialSkip"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useSessionStore, useDialogStore, useLayoutStore, useLocaleStore } from '@/stores'
 import { IconRight, IconLeft } from '@arco-design/web-vue/es/icon'
 import LeftSidebar from '@/components/layout/LeftSidebar.vue'
 import MainContent from '@/components/layout/MainContent.vue'
 import RightPanel from '@/components/layout/RightPanel.vue'
+import TutorialModal from '@/components/TutorialModal.vue'
+import { shouldShowTutorial, markTutorialCompleted, markTutorialSkipped, markTutorialShown } from '@/utils/tutorial'
 
 // 使用stores
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
 const layoutStore = useLayoutStore()
 const localeStore = useLocaleStore()
+
+// 教学Modal状态
+const showTutorial = ref(false)
 
 // 计算属性
 const sidebarVisible = computed(() => layoutStore.sidebarVisible)
@@ -99,6 +111,21 @@ function hideChatPanel() {
   layoutStore.setChatPanelMode('hidden')
 }
 
+// 教学Modal事件处理
+function handleTutorialComplete() {
+  markTutorialCompleted()
+  showTutorial.value = false
+}
+
+function handleTutorialSkip() {
+  markTutorialSkipped()
+  showTutorial.value = false
+}
+
+function handleShowTutorial() {
+  showTutorial.value = true
+}
+
 // 初始化数据
 onMounted(async () => {
   try {
@@ -115,6 +142,15 @@ onMounted(async () => {
         sessionStore.setCurrentSession(firstSession.id)
         await dialogStore.fetchDialogTree(firstSession.id)
       }
+    }
+    
+    // 检查是否需要显示教学Modal
+    if (shouldShowTutorial()) {
+      // 延迟一下显示，让页面先渲染完成
+      setTimeout(() => {
+        showTutorial.value = true
+        markTutorialShown()
+      }, 1000)
     }
   } catch (error) {
     console.error('Failed to initialize app:', error)
