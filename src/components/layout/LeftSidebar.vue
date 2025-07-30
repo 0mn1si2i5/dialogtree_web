@@ -10,8 +10,8 @@
       </div>
       
       <!-- 帮助按钮 -->
-      <a-button 
-        type="text" 
+      <a-button
+        type="text"
         size="small"
         class="help-button"
         @click="$emit('show-tutorial')"
@@ -199,11 +199,10 @@ import dayjs from 'dayjs'
 import type { Session, Category } from '@/types'
 import SessionModals from './SessionModals.vue'
 
-// 定义emit
-interface Emits {
-  (e: 'show-tutorial'): void
-}
-const emit = defineEmits<Emits>()
+// 定义emit接口
+const emit = defineEmits<{
+  'show-tutorial': []
+}>()
 
 // 使用stores和i18n
 const sessionStore = useSessionStore()
@@ -594,15 +593,13 @@ function resetRenameCategoryForm() {
 }
 
 .help-button {
-  color: #999;
-  opacity: 0.7;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
   
   &:hover {
-    color: #1890ff;
-    opacity: 1;
+    background-color: #f5f5f5;
   }
 }
+
 
 .sidebar-header {
   display: flex;

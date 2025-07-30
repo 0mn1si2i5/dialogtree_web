@@ -86,66 +86,68 @@ export default {
       subtitle: 'More than just chat, this is a purposeful thinking journey',
       intro: {
         title: 'Have you ever encountered these troubles when using AI conversations:',
-        pain1: 'Want to review past conversations but can\'t find your original questions?',
-        pain2: 'Had inspiring answers that got buried in messy records?',
-        pain3: 'Want to systematically organize knowledge but find the conversation context chaotic?',
-        pain4: 'Want to expand another line of thinking from a conversation point but can\'t find the entry?'
+        pain1: '- Want to review past conversations but can\'t find your original questions?',
+        pain2: '- Had inspiring answers that got buried in messy records?',
+        pain3: '- Want to systematically organize knowledge but find the conversation context chaotic?',
+        pain4: '- Want to expand another line of thinking from a conversation point but can\'t find the entry?'
       },
       solution: {
         title: 'DialogTree was born to solve these troubles!',
         desc: 'Here, every conversation is a "knowledge tree", and every Q&A is an expandable knowledge branch, gradually building clear structure and thinking context.'
       },
       features: {
-        title: 'Starting now:',
+        title: 'Starting now, with Dialog Tree:',
         feature1: 'Deeply communicate with AI like taking notes',
         feature2: 'Manage every question like managing mind maps',
         feature3: 'Build your own AI knowledge graph!'
       }
     },
     basics: {
-      title: 'Basic Layout Introduction',
-      step1: {
-        title: 'Left Directory Area',
-        desc: 'Includes all session lists and session category management, supports create, rename, delete operations to help you overview sessions',
-        sidebar: 'Session Management',
-        main: 'Dialog Tree Visualization',
-        chat: 'Chat Panel'
-      },
-      step2: {
-        title: 'Central Tree Display Area',
-        desc: 'Generates structured maps of current sessions anytime, with core summaries of each conversation, helping you build clear structure and thinking context'
-      },
-      step3: {
-        title: 'Right Q&A Area',
-        desc: 'Area for interacting with AI, supports conversation branching, bookmarking, commenting, and Markdown format rendering'
-      }
+      title: 'Basic Layout',
+      slides: [
+        {
+          title: 'Left Directory Area',
+          desc: 'Includes all session lists and session category management, supports create, rename, delete operations to help you overview sessions',
+          image: '/screenshot/1-1.png'
+        },
+        {
+          title: 'Central Tree Display Area',
+          desc: 'Generates structured maps of current sessions anytime, with core summaries of each conversation, helping you build clear structure and thinking context',
+          image: '/screenshot/1-2.png'
+        },
+        {
+          title: 'Right Q&A Area',
+          desc: 'Area for interacting with AI, supports conversation branching, bookmarking, commenting, and Markdown format rendering',
+          image: '/screenshot/1-3.png'
+        }
+      ]
     },
     advanced: {
-      title: 'Dialog Management Features',
-      nodeFeatures: {
-        title: 'Node Features',
-        item1: 'Every node in the conversation tree supports summary, bookmarking, commenting and other functions',
-        item2: 'Selecting any conversation node provides clear backtracking paths',
-        item3: 'Any conversation node can be selected to branch new conversations from the current node'
-      },
-      navigation: {
-        title: 'Navigation Operations',
-        item1: 'Click nodes to view corresponding conversation content',
-        item2: 'Use mouse wheel to zoom the dialog tree view',
-        item3: 'Hold Cmd/Alt + Left click to drag the entire dialog tree'
-      },
-      shortcuts: {
-        title: 'Useful Tips',
-        item1: 'Use Ctrl + Enter to quickly send messages',
-        item2: 'Double-click nodes to continue conversation directly from that point',
-        item3: 'Supports Markdown format rendering for clearer conversations'
-      },
-      complete: {
-        title: 'Ready to Go!',
-        desc: 'That\'s the introduction to DialogTree. Now you have mastered the core features, please start creating your own intelligent conversation trees!',
-        demo: 'Note: This is a Demo site, all data will be reset after 2 hours.',
-        github: 'For more information, welcome to visit my GitHub'
-      }
+      title: 'Dialog Management',
+      slides: [
+        {
+          title: 'Node Feature Support',
+          desc: 'Every node in the conversation tree supports summary, bookmarking, commenting and other functions',
+          image: '/screenshot/2-1.png'
+        },
+        {
+          title: 'Clear Backtracking Path',
+          desc: 'Selecting any conversation node provides clear backtracking paths',
+          image: '/screenshot/2-2.png'
+        },
+        {
+          title: 'Branch Extension Feature',
+          desc: 'Any conversation node can be selected to branch new conversations from the current node',
+          image: '/screenshot/2-3.png'
+        }
+      ]
+    },
+    complete: {
+      title: 'Ready to Go!',
+      desc: 'That\'s the introduction to DialogTree. Now you have mastered the core features, please start creating your own intelligent conversation trees!',
+      demo: 'Note: This is a Demo site, all data will be reset after 2 hours.',
+      github: 'For more information, welcome to visit my GitHub',
+      githubUrl: 'https://github.com/liran906/DialogTree'
     }
   }
 }

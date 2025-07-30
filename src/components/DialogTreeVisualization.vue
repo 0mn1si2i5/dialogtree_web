@@ -276,7 +276,11 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
     .data(links, d => `${d.source.data.id}-${d.target.data.id}`)
 
   // 移除旧连接线
-  linkSelection.exit().remove()
+  linkSelection.exit()
+    .transition()
+    .duration(300)
+    .style('opacity', 0)
+    .remove()
 
   // 添加新连接线
   const linkEnter = linkSelection.enter()
@@ -285,10 +289,14 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
     .attr('fill', 'none')
     .attr('stroke', '#ccc')
     .attr('stroke-width', 2)
+    .style('opacity', 0) // 初始透明
     // .attr('marker-end', 'url(#arrowhead)') // 移除箭头
 
-  // 更新连接线路径 - 连接到容器边缘
+  // 更新连接线路径 - 连接到容器边缘，添加动画
   linkEnter.merge(linkSelection)
+    .transition()
+    .duration(300)
+    .style('opacity', 1) // 渐显动画
     .attr('d', d => {
       const source = d.source
       const target = d.target
@@ -364,8 +372,8 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
   // 文本背景
   textGroup.append('rect')
     .attr('class', 'text-background')
-    .attr('rx', 4)
-    .attr('ry', 4)
+    .attr('rx', 14)
+    .attr('ry', 14)
 
   // 文本内容
   textGroup.append('text')
@@ -933,6 +941,12 @@ function resetLayout() {
     align-items: center;
     justify-content: space-between;
   }
+  
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 }
 
 
@@ -1042,17 +1056,17 @@ function resetLayout() {
   }
   
   .text-background {
-    fill: rgba(255, 255, 255, 0.9);
+    fill: rgba(252, 252, 252, 0.9);
     stroke: #ddd;
-    stroke-width: 1px;
+    stroke-width: 2px;
     
     &.current {
-      stroke: #0961d5; // 蓝色
-      stroke-width: 2px;
+      stroke: #4696ff; // 蓝色
+      stroke-width: 3px;
     }
     
     &.ancestor {
-      stroke: #89ccff; // 青色(cyan)
+      stroke: #45b6f4; // 青色(cyan)
       stroke-width: 2px;
     }
     
@@ -1076,8 +1090,10 @@ function resetLayout() {
   &:hover {
     .text-background {
       fill: rgba(255, 255, 255, 1);
-      stroke: #999;
-      stroke-width: 2px;
+      transition: 0.3s ease;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+      //stroke: #1373e4;
+      //stroke-width: 2px;
     }
   }
 }

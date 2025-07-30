@@ -304,7 +304,6 @@ const basicSlides = ref([
     image: '/screenshot/1-3.png'
   }
 ])
-
 const advancedSlides = ref([
   {
     title: '节点功能支持',
