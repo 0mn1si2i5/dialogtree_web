@@ -262,6 +262,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '@/locales'
 
 interface Props {
   visible: boolean
@@ -275,7 +276,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // 本地状态
 const visible = ref(props.visible)
@@ -286,41 +287,32 @@ const pages = ref(['welcome', 'basics', 'advanced', 'complete'])
 const basicSlideIndex = ref(0)
 const advancedSlideIndex = ref(0)
 
-// 轮播数据
-const basicSlides = ref([
-  {
-    title: '左侧目录区域',
-    desc: '包括所有会话列表和会话分类管理，支持创建、重命名、删除等操作，帮您总览会话情况',
-    image: '/screenshot/1-1.png'
-  },
-  {
-    title: '中央树形显示区域',
-    desc: '随时生成当前会话的结构化图谱，附带每次对话核心摘要，帮助你构建出清晰的结构与思维脉络',
-    image: '/screenshot/1-2.png'
-  },
-  {
-    title: '右侧问答区',
-    desc: '与 AI 交互的区域，支持对话衍伸分叉、收藏、评论，支持 Markdown 格式渲染',
-    image: '/screenshot/1-3.png'
-  }
-])
-const advancedSlides = ref([
-  {
-    title: '节点功能支持',
-    desc: '会话树中的每一个节点都支持摘要、收藏、评论等功能',
-    image: '/screenshot/2-1.png'
-  },
-  {
-    title: '清晰回溯路径',
-    desc: '选取任何对话节点都有清晰回溯路径',
-    image: '/screenshot/2-2.png'
-  },
-  {
-    title: '分支衍生功能',
-    desc: '选择任意对话节点都可以从当前节点衍伸新的分支会话',
-    image: '/screenshot/2-3.png'
-  }
-])
+// 定义slide类型
+interface SlideData {
+  title: string
+  desc: string
+  image: string
+}
+
+// 轮播数据 - 使用ref存储，通过watch动态更新
+const basicSlides = ref<SlideData[]>([])
+const advancedSlides = ref<SlideData[]>([])
+
+// 更新slide数据的函数
+function updateSlideData() {
+  const currentLocale = locale.value as 'zh-CN' | 'en-US'
+  const messages = i18n.global.messages.value[currentLocale] as any
+  basicSlides.value = messages.tutorial.basics.slides as SlideData[]
+  advancedSlides.value = messages.tutorial.advanced.slides as SlideData[]
+}
+
+// 监听locale变化，更新slide数据
+watch(locale, () => {
+  updateSlideData()
+})
+
+// 初始化slide数据
+updateSlideData()
 
 // 监听外部visible变化
 watch(() => props.visible, (newVal) => {

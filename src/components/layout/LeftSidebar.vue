@@ -1,33 +1,13 @@
 <template>
   <div class="left-sidebar">
-    <!-- 项目Logo区域 -->
-    <div class="logo-header">
-      <div class="logo-content">
-        <div class="logo-icon">
-          <img src="/dt-logo.png" alt="DialogTree Logo" />
-        </div>
-        <span class="logo-text">DialogTree</span>
-      </div>
-      
-      <!-- 帮助按钮 -->
-      <a-button
-        type="text"
-        size="small"
-        class="help-button"
-        @click="$emit('show-tutorial')"
-        :title="$t('tutorial.nav.help')"
-      >
-        <template #icon>
-          <icon-question-circle />
-        </template>
-      </a-button>
-    </div>
-    
     <!-- 标签页工具栏 -->
     <div class="sidebar-header">
       <a-tabs v-model:active-key="activeTab" size="small" class="sidebar-tabs" type="text" hide-content>
-        <a-tab-pane key="sessions" :title="$t('sidebar.sessions')" />
-        <a-tab-pane key="categories" :title="$t('sidebar.categories')" />
+        <span class="sess_and_cate">
+          <a-tab-pane key="sessions" :title="$t('sidebar.sessions')" />
+          <a-tab-pane key="categories" :title="$t('sidebar.categories')" />
+        </span>
+
       </a-tabs>
     </div>
 
@@ -194,15 +174,10 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Message, Modal } from '@arco-design/web-vue'
 import { useSessionStore, useDialogStore, useLocaleStore } from '@/stores'
-import { IconMore, IconQuestionCircle } from '@arco-design/web-vue/es/icon'
+import { IconMore } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { Session, Category } from '@/types'
 import SessionModals from './SessionModals.vue'
-
-// 定义emit接口
-const emit = defineEmits<{
-  'show-tutorial': []
-}>()
 
 // 使用stores和i18n
 const sessionStore = useSessionStore()
@@ -554,65 +529,28 @@ function resetRenameCategoryForm() {
   box-sizing: border-box;
 }
 
-.logo-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
-  background-color: #fff;
-  flex-shrink: 0;
-  height: 65px;
-}
-
-.logo-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-icon {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-}
-
-.logo-text {
-  font-size: 18px;
-  font-weight: bold;
-  color: #1890ff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-.help-button {
-  flex-shrink: 0;
-  
-  &:hover {
-    background-color: #f5f5f5;
-  }
-}
 
 
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 45px;
-  //border-bottom: 1px solid #e5e5e5;
-  //border-top: 1px solid #e5e5e5;
+  padding: 0 1px;
   background-color: #fff;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
-  min-height: 48px;
+  min-height: 40px;
+
+  :deep(.sidebar-tabs .arco-tabs-nav-tab) {
+    margin-top: 6px;
+    display: flex;
+    justify-content: center;
+  }
+
+  :deep(.sidebar-tabs .arco-tabs-nav-tab-list) {
+    display: inline-flex;
+  }
 }
 
 .sidebar-tabs {
@@ -648,7 +586,7 @@ function resetRenameCategoryForm() {
 }
 
 .category-filter {
-  padding: 6px 16px;
+  padding: 0px 16px 12px 16px;
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;

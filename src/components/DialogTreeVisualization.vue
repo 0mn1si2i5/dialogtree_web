@@ -1,42 +1,5 @@
 <template>
   <div class="tree-visualization">
-    <!-- 工具栏 -->
-    <div class="tree-toolbar">
-      <div class="toolbar-left">
-        <!-- 保留为空，或者可以添加其他左侧控件 -->
-      </div>
-      
-      <div class="toolbar-right">
-        <!-- 语言切换按钮 -->
-        <a-button @click="toggleLanguage" type="text" size="small" class="language-toggle">
-          <template #icon>
-            <icon-language />
-          </template>
-          {{ localeStore.getToggleButtonText() }}
-        </a-button>
-        
-        <!-- 节点颜色图例 -->
-<!--        <div class="color-legend">-->
-<!--          <div class="legend-item">-->
-<!--            <div class="legend-color current"></div>-->
-<!--            <span>当前选中</span>-->
-<!--          </div>-->
-<!--          <div class="legend-item">-->
-<!--            <div class="legend-color ancestor"></div>-->
-<!--            <span>祖先路径</span>-->
-<!--          </div>-->
-<!--          <div class="legend-item">-->
-<!--            <div class="legend-color starred"></div>-->
-<!--            <span>已收藏</span>-->
-<!--          </div>-->
-<!--          <div class="legend-item">-->
-<!--            <div class="legend-color default"></div>-->
-<!--            <span>普通节点</span>-->
-<!--          </div>-->
-<!--        </div>-->
-      </div>
-    </div>
-
     <!-- SVG容器 -->
     <div class="tree-container" ref="containerRef">
       <svg ref="svgRef" class="tree-svg">
@@ -112,7 +75,6 @@ import { useDialogStore, useLocaleStore, useSessionStore, useLayoutStore } from 
 import { 
   IconFullscreen, 
   IconRefresh,
-  IconLanguage,
   IconZoomIn as IconZoom
 } from '@arco-design/web-vue/es/icon'
 import type { ConversationTreeNode } from '@/types'
@@ -643,11 +605,6 @@ function resetZoom() {
     .call(zoom.transform, d3.zoomIdentity)
 }
 
-// 切换语言
-function toggleLanguage() {
-  localeStore.toggleLocale()
-  locale.value = localeStore.currentLocale
-}
 
 // 处理窗口大小变化
 function handleResize() {
@@ -929,11 +886,11 @@ function resetLayout() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 16px;
   background-color: #fff;
   border-bottom: 1px solid #e5e5e5;
   flex-shrink: 0;
-  height: 65px;
+  height: 40px;
 
   .toolbar-left {
     width: 300px;

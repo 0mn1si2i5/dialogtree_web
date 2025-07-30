@@ -156,9 +156,9 @@
       
       <div class="input-tip">
         <span>{{ $t('chat.sendTip') }}</span>
-        <span v-if="selectedConversationId">
-          {{ $t('chat.continueFromNode') }}
-        </span>
+<!--        <span v-if="selectedConversationId">-->
+<!--          {{ $t('chat.continueFromNode') }}-->
+<!--        </span>-->
       </div>
     </div>
 
@@ -392,11 +392,11 @@ function toggleMaximize() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
   background-color: #fff;
   flex-shrink: 0;
-  height: 65px;
+  height: 60px;
 }
 
 .header-title {
@@ -569,7 +569,7 @@ function toggleMaximize() {
 }
 
 .chat-input {
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid #f0f0f0;
   padding: 16px 16px 6px 16px;
   flex-shrink: 0;
 }

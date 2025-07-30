@@ -1,65 +1,71 @@
 <template>
-  <div class="layout-container" :style="cssVariables">
-    <!-- 左侧边栏 -->
-    <aside 
-      class="sidebar-area"
-      :class="{ 'sidebar-hidden': !sidebarVisible }"
-    >
-      <div v-show="sidebarVisible" class="sidebar-content">
-        <LeftSidebar @show-tutorial="handleShowTutorial" />
-        
-        <!-- 左边栏隐藏按钮 -->
-        <div 
-          class="sidebar-hide-btn"
-          @click="toggleSidebar"
-          title="隐藏侧边栏"
-        >
-          <icon-left />
+  <div class="layout-container">
+    <!-- 顶部Header -->
+    <AppHeader @show-tutorial="handleShowTutorial" />
+    
+    <!-- 下方主要内容区域 -->
+    <div class="main-container" :style="cssVariables">
+      <!-- 左侧边栏 -->
+      <aside 
+        class="sidebar-area"
+        :class="{ 'sidebar-hidden': !sidebarVisible }"
+      >
+        <div v-show="sidebarVisible" class="sidebar-content">
+          <LeftSidebar />
+          
+          <!-- 左边栏隐藏按钮 -->
+          <div 
+            class="sidebar-hide-btn"
+            @click="toggleSidebar"
+            title="隐藏侧边栏"
+          >
+            <icon-left />
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
 
-    <!-- 左边栏隐藏时的恢复按钮 -->
-    <div 
-      v-show="!sidebarVisible" 
-      class="sidebar-toggle-btn"
-      @click="toggleSidebar"
-      title="显示侧边栏"
-    >
-      <icon-right />
-    </div>
-
-    <!-- 中央对话树区域 -->
-    <main 
-      v-show="showTreeArea" 
-      class="tree-area"
-    >
-      <MainContent />
-    </main>
-
-    <!-- 右侧聊天面板 -->
-    <section class="chat-area">
-      <RightPanel />
-      
-      <!-- 右边栏隐藏按钮 -->
+      <!-- 左边栏隐藏时的恢复按钮 -->
       <div 
-        v-show="chatPanelMode !== 'hidden'"
-        class="chat-panel-hide-btn"
-        @click="hideChatPanel"
-        title="隐藏聊天面板"
+        v-show="!sidebarVisible" 
+        class="sidebar-toggle-btn"
+        @click="toggleSidebar"
+        title="显示侧边栏"
       >
         <icon-right />
       </div>
-    </section>
 
-    <!-- 右边栏隐藏时的恢复按钮 -->
-    <div 
-      v-show="chatPanelMode === 'hidden'" 
-      class="chat-panel-toggle-btn"
-      @click="restoreChatPanel"
-      title="显示聊天面板"
-    >
-      <icon-left />
+      <!-- 中央对话树区域 -->
+      <main 
+        v-show="showTreeArea" 
+        class="tree-area"
+      >
+        <MainContent />
+      </main>
+
+      <!-- 右侧聊天面板 -->
+      <section class="chat-area">
+        <RightPanel />
+        
+        <!-- 右边栏隐藏按钮 -->
+        <div 
+          v-show="chatPanelMode !== 'hidden'"
+          class="chat-panel-hide-btn"
+          @click="hideChatPanel"
+          title="隐藏聊天面板"
+        >
+          <icon-right />
+        </div>
+      </section>
+
+      <!-- 右边栏隐藏时的恢复按钮 -->
+      <div 
+        v-show="chatPanelMode === 'hidden'" 
+        class="chat-panel-toggle-btn"
+        @click="restoreChatPanel"
+        title="显示聊天面板"
+      >
+        <icon-left />
+      </div>
     </div>
   </div>
 
@@ -75,6 +81,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSessionStore, useDialogStore, useLayoutStore, useLocaleStore } from '@/stores'
 import { IconRight, IconLeft } from '@arco-design/web-vue/es/icon'
+import AppHeader from '@/components/layout/AppHeader.vue'
 import LeftSidebar from '@/components/layout/LeftSidebar.vue'
 import MainContent from '@/components/layout/MainContent.vue'
 import RightPanel from '@/components/layout/RightPanel.vue'
@@ -160,12 +167,19 @@ onMounted(async () => {
 
 <style lang="less" scoped>
 .layout-container {
-  display: grid;
-  grid-template-areas: "sidebar tree chat";
-  grid-template-columns: var(--sidebar-width) 1fr var(--chat-panel-width);
+  display: flex;
+  flex-direction: column;
   width: 100vw;
   height: 100vh;
   background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+.main-container {
+  display: grid;
+  grid-template-areas: "sidebar tree chat";
+  grid-template-columns: var(--sidebar-width) 1fr var(--chat-panel-width);
+  flex: 1;
   overflow: hidden;
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -173,7 +187,7 @@ onMounted(async () => {
 .sidebar-area {
   grid-area: sidebar;
   background-color: #fff;
-  border-right: 1px solid #e5e5e5;
+  border-right: 1px solid #f0f0f0;
   overflow: hidden;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -201,7 +215,7 @@ onMounted(async () => {
 .chat-area {
   grid-area: chat;
   background-color: #fff;
-  border-left: 1px solid #e5e5e5;
+  border-left: 1px solid #f0f0f0;
   overflow: hidden;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
