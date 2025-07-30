@@ -44,10 +44,12 @@ export default {
   tree: {
     fitScreen: '适应屏幕',
     actualSize: '实际大小',
+    resetLayout: '重置布局',
     expandPanel: '展开聊天面板',
     restorePanel: '恢复正常大小',
     hidePanel: '隐藏聊天面板',
-    showPanel: '显示聊天面板'
+    showPanel: '显示聊天面板',
+    dragHint: '按住 Cmd/Alt+左键可以拖动'
   },
   
   session: {

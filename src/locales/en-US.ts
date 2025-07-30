@@ -44,10 +44,12 @@ export default {
   tree: {
     fitScreen: 'Fit Screen',
     actualSize: 'Actual Size',
+    resetLayout: 'Reset Layout',
     expandPanel: 'Expand Chat Panel',
     restorePanel: 'Restore Normal Size',
     hidePanel: 'Hide Chat Panel',
-    showPanel: 'Show Chat Panel'
+    showPanel: 'Show Chat Panel',
+    dragHint: 'Hold Cmd/Alt+Left Click to drag'
   },
   
   session: {
