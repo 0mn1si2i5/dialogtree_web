@@ -109,10 +109,12 @@ onMounted(async () => {
     await sessionStore.initialize()
     
     // 如果有会话，加载第一个会话的对话树
-    if (sessionStore.sessions.length > 0) {
+    if (sessionStore.sessions && sessionStore.sessions.length > 0) {
       const firstSession = sessionStore.sessions[0]
-      sessionStore.setCurrentSession(firstSession.id)
-      await dialogStore.fetchDialogTree(firstSession.id)
+      if (firstSession && firstSession.id) {
+        sessionStore.setCurrentSession(firstSession.id)
+        await dialogStore.fetchDialogTree(firstSession.id)
+      }
     }
   } catch (error) {
     console.error('Failed to initialize app:', error)

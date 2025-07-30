@@ -35,11 +35,12 @@ export const useSessionStore = defineStore('session', () => {
     try {
       loading.value = true
       error.value = ''
-      sessions.value = await sessionApi.getSessions()
+      const result = await sessionApi.getSessions()
+      sessions.value = Array.isArray(result) ? result : []
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取会话列表失败'
       console.error('Failed to fetch sessions:', err)
-      throw err
+      sessions.value = [] // 确保在错误时也设置为空数组
     } finally {
       loading.value = false
     }
@@ -51,10 +52,11 @@ export const useSessionStore = defineStore('session', () => {
       loading.value = true
       error.value = ''
       const result = await categoryApi.getCategories()
-      categories.value = result.list
+      categories.value = result?.list && Array.isArray(result.list) ? result.list : []
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取分类列表失败'
       console.error('Failed to fetch categories:', err)
+      categories.value = [] // 确保在错误时也设置为空数组
     } finally {
       loading.value = false
     }
@@ -235,10 +237,15 @@ export const useSessionStore = defineStore('session', () => {
 
   // 初始化数据
   async function initialize() {
-    await Promise.all([
-      fetchSessions(),
-      fetchCategories()
-    ])
+    try {
+      // 分别处理，即使一个失败也不影响另一个
+      await Promise.allSettled([
+        fetchSessions(),
+        fetchCategories()
+      ])
+    } catch (err) {
+      console.error('Failed to initialize session store:', err)
+    }
   }
 
   return {

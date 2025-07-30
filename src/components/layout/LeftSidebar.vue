@@ -617,6 +617,7 @@ function resetRenameCategoryForm() {
   overflow: hidden;
   width: 100%;
   max-width: 100%;
+  height: 100%;
 }
 
 .category-filter {
@@ -633,6 +634,22 @@ function resetRenameCategoryForm() {
   overflow-x: hidden;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  
+  // 让a-spin组件占据全部高度
+  .arco-spin {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  // 当没有内容时，让a-empty垂直居中
+  .arco-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .session-footer,

@@ -7,7 +7,7 @@ export const sessionApi = {
   // 获取所有会话
   async getSessions(): Promise<Session[]> {
     const response = await http.get<ApiResponse<Session[]>>('/sessions')
-    return response.data.data
+    return response.data.data || []
   },
 
   // 创建新会话
@@ -54,7 +54,7 @@ export const categoryApi = {
   // 获取所有分类
   async getCategories(): Promise<{ count: number; list: Category[] }> {
     const response = await http.get<ApiResponse<{ count: number; list: Category[] }>>('/categories')
-    return response.data.data
+    return response.data.data || { count: 0, list: [] }
   },
 
   // 创建新分类

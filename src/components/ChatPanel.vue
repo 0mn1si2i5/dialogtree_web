@@ -90,7 +90,6 @@
                 </a-button>
                 
                 <a-button 
-                  v-if="message.role === 'assistant'"
                   type="text" 
                   size="mini"
                   @click="copyMessageContent(message.content)"
@@ -571,7 +570,7 @@ function toggleMaximize() {
 
 .chat-input {
   border-top: 1px solid #e5e5e5;
-  padding: 16px;
+  padding: 16px 16px 6px 16px;
   flex-shrink: 0;
 }
 
@@ -588,7 +587,7 @@ function toggleMaximize() {
 .input-tip {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: 12px;
   color: #999;
 }
