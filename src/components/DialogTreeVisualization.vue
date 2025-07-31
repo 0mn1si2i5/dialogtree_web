@@ -232,6 +232,63 @@ function renderTree() {
   fitToScreen()
 }
 
+// 获取连接线颜色
+function getLinkColor(d: d3.HierarchyLink<ConversationTreeNode>): string {
+  const sourceId = d.source.data.conversationId
+  const targetId = d.target.data.conversationId
+  
+  // 如果没有选中节点，所有连线都是灰色
+  if (!selectedConversationId.value) {
+    return '#ccc'
+  }
+  
+  // 关键逻辑：只有目标节点在祖先路径中或是选中节点，且源节点在祖先路径中但不是选中节点时，连线才变蓝色
+  const targetInAncestorPath = ancestorNodeIds.value.includes(targetId)
+  const targetIsSelected = targetId === selectedConversationId.value
+  const sourceInAncestorPath = ancestorNodeIds.value.includes(sourceId)
+  const sourceIsSelected = sourceId === selectedConversationId.value
+  
+  // 核心判断：排除从选中节点指向子节点的连线
+  if (sourceIsSelected) {
+    return '#ccc'
+  }
+  
+  // 连线变蓝色的条件：源节点在祖先路径中，目标节点在祖先路径中或是选中节点
+  if (sourceInAncestorPath && (targetInAncestorPath || targetIsSelected)) {
+    return '#45b6f4'
+  }
+  
+  return '#ccc'
+}
+
+// 获取连接线宽度
+function getLinkWidth(d: d3.HierarchyLink<ConversationTreeNode>): number {
+  const sourceId = d.source.data.conversationId
+  const targetId = d.target.data.conversationId
+  
+  // 如果没有选中节点，所有连线都是默认宽度
+  if (!selectedConversationId.value) {
+    return 2
+  }
+  
+  const targetInAncestorPath = ancestorNodeIds.value.includes(targetId)
+  const targetIsSelected = targetId === selectedConversationId.value
+  const sourceInAncestorPath = ancestorNodeIds.value.includes(sourceId)
+  const sourceIsSelected = sourceId === selectedConversationId.value
+  
+  // 排除从选中节点指向子节点的连线
+  if (sourceIsSelected) {
+    return 2
+  }
+  
+  // 选中路径上的连线更粗
+  if (sourceInAncestorPath && (targetInAncestorPath || targetIsSelected)) {
+    return 3
+  }
+  
+  return 2
+}
+
 // 渲染连接线
 function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
   const linkSelection = g.selectAll<SVGPathElement, d3.HierarchyLink<ConversationTreeNode>>('.link')
@@ -254,11 +311,13 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
     .style('opacity', 0) // 初始透明
     // .attr('marker-end', 'url(#arrowhead)') // 移除箭头
 
-  // 更新连接线路径 - 连接到容器边缘，添加动画
+  // 更新连接线路径和样式 - 连接到容器边缘，添加动画
   linkEnter.merge(linkSelection)
     .transition()
     .duration(300)
     .style('opacity', 1) // 渐显动画
+    .attr('stroke', d => getLinkColor(d))
+    .attr('stroke-width', d => getLinkWidth(d))
     .attr('d', d => {
       const source = d.source
       const target = d.target
@@ -498,6 +557,11 @@ function updateNodeStyles() {
       textBackground.classed('current ancestor starred default', false)
       textBackground.classed(colorClass, true)
     })
+
+  // 更新连接线样式
+  g.selectAll<SVGPathElement, d3.HierarchyLink<ConversationTreeNode>>('.link')
+    .attr('stroke', d => getLinkColor(d))
+    .attr('stroke-width', d => getLinkWidth(d))
 }
 
 // ===== 事件处理 =====
@@ -739,6 +803,8 @@ function updateLinksPosition() {
   if (!g) return
   
   g.selectAll<SVGPathElement, d3.HierarchyLink<ConversationTreeNode>>('.link')
+    .attr('stroke', d => getLinkColor(d))
+    .attr('stroke-width', d => getLinkWidth(d))
     .attr('d', d => {
       const source = d.source
       const target = d.target
@@ -836,6 +902,8 @@ function resetLayout() {
   g.selectAll<SVGPathElement, d3.HierarchyLink<ConversationTreeNode>>('.link')
     .transition()
     .duration(300)
+    .attr('stroke', d => getLinkColor(d))
+    .attr('stroke-width', d => getLinkWidth(d))
     .attr('d', d => {
       const source = d.source
       const target = d.target
@@ -917,44 +985,6 @@ function resetLayout() {
 
 
 
-.color-legend {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid;
-  
-  &.current {
-    background-color: var(--node-current);
-    border-color: var(--node-current);
-  }
-  
-  &.ancestor {
-    background-color: var(--node-ancestor);
-    border-color: var(--node-ancestor);
-  }
-  
-  &.starred {
-    background-color: var(--node-starred);
-    border-color: var(--node-starred);
-  }
-  
-  &.default {
-    background-color: var(--node-default);
-    border-color: var(--node-default);
-  }
-}
 
 .tree-container {
   flex: 1;
@@ -1022,18 +1052,18 @@ function resetLayout() {
   }
   
   .text-background {
-    fill: rgba(252, 252, 252, 0.9);
+    fill: rgba(250, 250, 250, 1);
     stroke: #ddd;
     stroke-width: 2px;
     
     &.current {
       stroke: #4696ff; // 蓝色
-      stroke-width: 3px;
+      stroke-width: 4px;
     }
     
     &.ancestor {
       stroke: #45b6f4; // 青色(cyan)
-      stroke-width: 2px;
+      stroke-width: 3px;
     }
     
     &.starred {
@@ -1042,8 +1072,8 @@ function resetLayout() {
     }
     
     &.default {
-      stroke: #ddd; // 灰色
-      stroke-width: 1px;
+      stroke: #c8c8c8; // 灰色
+      stroke-width: 2px;
     }
   }
   
