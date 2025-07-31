@@ -14,11 +14,6 @@ export const dialogApi = {
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     try {
-      // 设置30秒超时
-      timeoutId = setTimeout(() => {
-        onError('响应超时，请重试')
-      }, 30000)
-
       const response = await fetch('/api/dialog/chat', {
         method: 'POST',
         headers: {
@@ -41,6 +36,18 @@ export const dialogApi = {
       let buffer = ''
       let hasReceivedDone = false
       let lastMessageTime = Date.now()
+
+      // 设置活跃性检测，每20秒检查一次是否有新数据
+      const checkActivity = () => {
+        const now = Date.now()
+        if (now - lastMessageTime > 60000) { // 60秒无数据则超时
+          onError('响应超时，请重试')
+          if (timeoutId) clearTimeout(timeoutId)
+        } else {
+          timeoutId = setTimeout(checkActivity, 20000)
+        }
+      }
+      timeoutId = setTimeout(checkActivity, 20000)
 
       while (true) {
         const { done, value } = await reader.read()
