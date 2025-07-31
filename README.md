@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DialogTree Logo](public/dt-logo.png)
+<img src="public/dt-logo.png" alt="DialogTree Logo" width="400" height="400" style="max-width: 400px; height: auto;">
 
 **一个支持对话分叉的智能对话系统前端应用**
 

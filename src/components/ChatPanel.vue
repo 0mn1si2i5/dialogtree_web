@@ -17,8 +17,8 @@
           :title="chatPanelMode === 'normal' ? $t('tree.expandPanel') : $t('tree.restorePanel')"
         >
           <template #icon>
-            <icon-fullscreen v-if="chatPanelMode === 'normal'" />
-            <icon-fullscreen-exit v-else />
+            <icon-left v-if="chatPanelMode === 'normal'" />
+            <icon-right v-else />
           </template>
         </a-button>
       </div>
@@ -207,8 +207,8 @@ import {
   IconMessage, 
   IconBranch, 
   IconSend,
-  IconFullscreen,
-  IconFullscreenExit,
+  IconLeft,
+  IconRight,
   IconCopy
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'

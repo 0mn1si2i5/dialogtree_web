@@ -73,6 +73,12 @@ export default {
     selectNewCategory: 'Select new category'
   },
   
+  header: {
+    switchLanguage: '切换中文',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit Fullscreen'
+  },
+  
   tutorial: {
     nav: {
       previous: 'Previous',
@@ -146,8 +152,12 @@ export default {
       title: 'Ready to Go!',
       desc: 'That\'s the introduction to DialogTree. Now you have mastered the core features, please start creating your own intelligent conversation trees!',
       demo: 'Note: This is a Demo site, all data will be reset after 2 hours.',
-      github: 'For more information, welcome to visit my GitHub',
-      githubUrl: 'https://github.com/liran906/DialogTree'
+      reference: 'For more information, welcome to visit my ',
+      github: 'GitHub',
+      githubUrl: 'https://github.com/liran906/DialogTree',
+      or:' or ',
+      blog: 'Blog',
+      blogUrl: 'https://blog.golir.top/article/30'
     }
   }
 }

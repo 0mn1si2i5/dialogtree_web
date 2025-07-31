@@ -73,6 +73,12 @@ export default {
     selectNewCategory: '选择新的分类'
   },
   
+  header: {
+    switchLanguage: 'switch to English',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏'
+  },
+  
   tutorial: {
     nav: {
       previous: '上一页',
@@ -145,9 +151,13 @@ export default {
     complete: {
       title: '准备就绪！',
       desc: '好了！以上就是关于 DialogTree 的介绍，现在您已经掌握了 DialogTree 的核心功能，请开始创建属于您的智能对话树吧！',
-      demo: '注：本站点为 Demo 站点，所有数据将在 2 小时后重置。',
-      github: '更多咨询欢迎浏览我的 GitHub',
-      githubUrl: 'https://github.com/liran906/DialogTree'
+      demo: '注：本站点为项目 Demo，所有数据将在 2 小时后重置',
+      reference: '更多咨询欢迎浏览我的 ',
+      github: 'GitHub',
+      githubUrl: 'https://github.com/liran906/DialogTree',
+      or:' 或者 ',
+      blog: '博客',
+      blogUrl: 'https://blog.golir.top/article/30'
     }
   }
 }

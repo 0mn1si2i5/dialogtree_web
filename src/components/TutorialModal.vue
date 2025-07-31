@@ -178,8 +178,13 @@
             <div class="demo-notice">
               <p class="demo-text">{{ $t('tutorial.complete.demo') }}</p>
               <p class="github-link">
+                <span>{{ $t('tutorial.complete.reference') }}</span>
                 <a :href="$t('tutorial.complete.githubUrl')" target="_blank">
                   {{ $t('tutorial.complete.github') }}
+                </a>
+                <span>{{ $t('tutorial.complete.or') }}</span>
+                <a :href="$t('tutorial.complete.blogUrl')" target="_blank">
+                  {{ $t('tutorial.complete.blog') }}
                 </a>
               </p>
             </div>
@@ -744,7 +749,7 @@ function goToSlide(pageType: string, index: number) {
       //background: #f0f9ff;
       border-radius: 12px;
       //border: 1px solid #e1f5fe;
-      max-width: 400px;
+      max-width: 600px;
       margin: 0 auto;
       
       .demo-text {
@@ -757,12 +762,12 @@ function goToSlide(pageType: string, index: number) {
         margin: 0;
         
         a {
-          font-size: 12px;
+          font-size: 14px;
           color: #1890ff;
           text-decoration: none;
           
           &:hover {
-            text-decoration: underline;
+            font-weight: 600;
           }
         }
       }
