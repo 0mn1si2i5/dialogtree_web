@@ -1,7 +1,10 @@
 .idea
 node_modules
-前端开发说明.md
-上一轮-问题.md
-上一轮-项目开发日志.md
-建议采用的技术栈.md
+background/前端开发说明.md
+background/上一轮-问题.md
+background/上一轮-项目开发日志.md
+background/建议采用的技术栈.md
 screenshot
+background
+public/.DS_Store
+.DS_Store

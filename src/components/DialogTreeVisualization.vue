@@ -634,7 +634,7 @@ function handleDragStart(event: any, d: d3.HierarchyNode<ConversationTreeNode>) 
   
   // 记录拖拽起始位置
   const customPos = customNodePositions.value[d.data.conversationId]
-  dragStartPosition.value = customPos ? { ...customPos } : { x: d.x, y: d.y }
+  dragStartPosition.value = customPos ? { ...customPos } : { x: d.x ?? 0, y: d.y ?? 0 }
   
   // 阻止事件冒泡和默认行为
   event.sourceEvent.stopPropagation()
@@ -646,10 +646,13 @@ function handleDragStart(event: any, d: d3.HierarchyNode<ConversationTreeNode>) 
   }
   
   // 添加拖拽样式 - 直接使用当前选中的节点
-  const currentNode = d3.select(g.selectAll('.node').nodes().find(node => {
+  const nodeElement = g.selectAll('.node').nodes().find(node => {
     const nodeData = d3.select(node).datum() as d3.HierarchyNode<ConversationTreeNode>
     return nodeData.data.conversationId === d.data.conversationId
-  }))
+  })
+  
+  if (!nodeElement) return
+  const currentNode = d3.select(nodeElement)
   
   if (!currentNode.empty()) {
     currentNode.classed('dragging', true)
@@ -685,10 +688,13 @@ function handleDrag(event: any, d: d3.HierarchyNode<ConversationTreeNode>) {
   customNodePositions.value[dragNode.value.data.conversationId] = { x, y }
   
   // 立即更新正确的节点位置
-  const currentNode = d3.select(g.selectAll('.node').nodes().find(node => {
+  const nodeElement = g.selectAll('.node').nodes().find(node => {
     const nodeData = d3.select(node).datum() as d3.HierarchyNode<ConversationTreeNode>
     return nodeData.data.conversationId === dragNode.value!.data.conversationId
-  }))
+  })
+  
+  if (!nodeElement) return
+  const currentNode = d3.select(nodeElement)
   
   if (!currentNode.empty()) {
     currentNode.attr('transform', `translate(${x},${y})`)
@@ -700,14 +706,17 @@ function handleDrag(event: any, d: d3.HierarchyNode<ConversationTreeNode>) {
 
 function handleDragEnd(event: any, d: d3.HierarchyNode<ConversationTreeNode>) {
   // 移除拖拽样式 - 使用正确的节点
-  const currentNode = d3.select(g.selectAll('.node').nodes().find(node => {
+  const nodeElement = g.selectAll('.node').nodes().find(node => {
     const nodeData = d3.select(node).datum() as d3.HierarchyNode<ConversationTreeNode>
     return nodeData.data.conversationId === (dragNode.value?.data.conversationId || d.data.conversationId)
-  }))
+  })
   
-  if (!currentNode.empty()) {
-    currentNode.classed('dragging', false)
-    currentNode.style('z-index', null) // 恢复z-index
+  if (nodeElement) {
+    const currentNode = d3.select(nodeElement)
+    if (!currentNode.empty()) {
+      currentNode.classed('dragging', false)
+      currentNode.style('z-index', null) // 恢复z-index
+    }
   }
   
   // 最终更新连接线

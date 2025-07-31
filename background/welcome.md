@@ -36,7 +36,7 @@
 
 ## 基本布局
 
-![1-1.png](screenshot/1-1.png)
+![1-1.png](../screenshot/1-1.png)
 
 左侧目录区域，包括**所有会话列表**和**会话分类管理**
 
@@ -44,7 +44,7 @@
 
 ---
 
-![1-2.png](screenshot/1-2.png)
+![1-2.png](../screenshot/1-2.png)
 
 中央树形显示区域，随时生成当前会话的结构化图谱，附带每次对话核心摘要，
 
@@ -52,7 +52,7 @@
 
 ---
 
-![1-3.png](screenshot/1-3.png)
+![1-3.png](../screenshot/1-3.png)
 
 右侧问答区，与 AI 交互的区域，支持对话衍伸分叉、收藏、评论，支持 Markdown 格式渲染
 
@@ -62,19 +62,19 @@
 
 ## 对话管理
 
-![2-1.png](screenshot/2-1.png)
+![2-1.png](../screenshot/2-1.png)
 
 会话树中的每一个节点都支持摘要、收藏、评论等功能
 
 ---
 
-![2-2.png](screenshot/2-2.png)
+![2-2.png](../screenshot/2-2.png)
 
 选取任何对话节点都有清晰回溯路径
 
 ---
 
-![2-3.png](screenshot/2-3.png)
+![2-3.png](../screenshot/2-3.png)
 
 选择任意对话节点都可以从当前节点衍伸新的分支会话
 

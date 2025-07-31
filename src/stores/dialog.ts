@@ -73,7 +73,7 @@ export const useDialogStore = defineStore('dialog', () => {
       // 转换为ChatMessage格式
       history = chatNodes.map(node => ({
         id: node.id,
-        role: node.type,
+        role: node.type === 'conversation' ? 'assistant' : node.type as 'user' | 'assistant',
         content: node.content,
         timestamp: node.createdAt,
         conversationId: node.conversationId,

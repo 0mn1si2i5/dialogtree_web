@@ -11,7 +11,7 @@ export const dialogApi = {
     onComplete: (result: { dialogId: number; conversationId: number }) => void,
     onError: (error: string) => void
   ): Promise<void> {
-    let timeoutId: NodeJS.Timeout | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     try {
       // 设置30秒超时
