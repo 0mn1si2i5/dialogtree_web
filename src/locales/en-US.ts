@@ -38,7 +38,9 @@ export default {
     star: 'Star',
     unstar: 'Unstar',
     addComment: 'Add Comment',
-    continueConversation: 'Continue from here'
+    continueConversation: 'Continue from here',
+    comment: 'Comment',
+    viewComment: 'View Comment'
   },
   
   tree: {

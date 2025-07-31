@@ -64,6 +64,19 @@
     <div v-if="!hasDialogTree" class="empty-state">
       <a-empty :description="$t('chat.selectSession')" />
     </div>
+
+    <!-- 评论气泡 -->
+    <div 
+      v-show="showCommentBubble && currentCommentData"
+      class="comment-bubble"
+      :style="commentBubbleStyle"
+      @click.stop
+    >
+      <div class="comment-bubble-arrow"></div>
+      <div class="comment-bubble-content">
+        {{ currentCommentData?.comment }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,7 +88,8 @@ import { useDialogStore, useLocaleStore, useSessionStore, useLayoutStore } from 
 import { 
   IconFullscreen, 
   IconRefresh,
-  IconZoomIn as IconZoom
+  IconZoomIn as IconZoom,
+  IconMessage
 } from '@arco-design/web-vue/es/icon'
 import type { ConversationTreeNode } from '@/types'
 
@@ -94,6 +108,12 @@ const svgRef = ref<SVGElement>()
 const tooltipVisible = ref(false)
 const tooltipContent = ref('')
 const tooltipStyle = ref({})
+
+// 评论气泡状态
+const showCommentBubble = ref(false)
+const currentCommentData = ref<{ conversationId: number; comment: string; targetElement?: SVGGElement } | null>(null)
+const commentBubbleStyle = ref({})
+let lastTransform: d3.ZoomTransform | null = null
 
 // 拖拽相关状态
 const isDragging = ref(false)
@@ -128,10 +148,14 @@ onMounted(() => {
   
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize)
+  
+  // 监听全局点击事件，用于关闭评论气泡
+  document.addEventListener('click', handleGlobalClick)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  document.removeEventListener('click', handleGlobalClick)
   if (hoverTimeout) {
     clearTimeout(hoverTimeout)
   }
@@ -178,6 +202,23 @@ function initializeD3() {
     .scaleExtent([0.1, 3])
     .on('zoom', (event) => {
       g.attr('transform', event.transform)
+      
+      // 处理评论气泡在视口变化时的行为
+      if (showCommentBubble.value && currentCommentData.value) {
+        const currentTransform = event.transform
+        
+        // 如果是第一次记录transform或者缩放比例发生变化，关闭气泡
+        if (!lastTransform || lastTransform.k !== currentTransform.k) {
+          handleCloseCommentBubble()
+        } else {
+          // 如果只是平移，更新气泡位置
+          updateCommentBubblePosition()
+        }
+        
+        lastTransform = currentTransform
+      } else {
+        lastTransform = event.transform
+      }
     })
 
   svg.call(zoom)
@@ -402,6 +443,42 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
 
+  // 添加评论图标（仅对有评论的节点）
+  const commentIcon = nodeEnter.append('g')
+    .attr('class', 'comment-icon')
+    .style('opacity', 0)
+    .style('cursor', 'pointer')
+    .on('click', function(event, d) {
+      event.stopPropagation() // 阻止节点点击事件
+      // 获取实际的DOM事件和元素
+      const sourceEvent = event.sourceEvent || event
+      const targetElement = this // 当前被点击的SVG元素
+      handleCommentIconClick(d.data, sourceEvent, targetElement)
+    })
+
+  // 评论图标背景圆圈
+  commentIcon.append('circle')
+    .attr('r', 10)
+    .attr('fill', '#fff')
+    .attr('stroke', '#c8c8c8')
+    .attr('stroke-width', 2)
+
+  // 添加SVG foreignObject来渲染消息图标
+  const iconContainer = commentIcon.append('foreignObject')
+    .attr('x', -7)
+    .attr('y', -7)
+    .attr('width', 14)
+    .attr('height', 14)
+    
+  iconContainer.append('xhtml:div')
+    .style('width', '14px')
+    .style('height', '14px')
+    .style('display', 'flex')
+    .style('align-items', 'center')
+    .style('justify-content', 'center')
+    .style('color', '#c8c8c8')
+    .html('<svg viewBox="0 0 48 48" width="14" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter"><path d="M15 20h18m-18 9h9M7 41h17.63C33.67 41 41 33.67 41 24.63V24c0-9.389-7.611-17-17-17S7 14.611 7 24v17Z"></path></svg>')
+
   // 更新现有节点
   const nodeUpdate = nodeEnter.merge(nodeSelection)
     .transition()
@@ -410,6 +487,29 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('transform', d => {
       const customPos = customNodePositions.value[d.data.conversationId]
       return customPos ? `translate(${customPos.x},${customPos.y})` : `translate(${d.x},${d.y})`
+    })
+
+  // 更新评论图标显示状态和位置
+  nodeEnter.merge(nodeSelection).select('.comment-icon')
+    .style('opacity', d => {
+      const hasComment = d.data.comment && d.data.comment.trim()
+      console.log(`节点 ${d.data.conversationId} 评论状态:`, hasComment, d.data.comment)
+      return hasComment ? 1 : 0
+    })
+    .each(function(d) {
+      // 计算评论图标位置（节点右上角）- 只计算一次，避免重复计算导致移动
+      const summary = d.data.summary || d.data.content || 'No summary'
+      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+      const usableWidth = containerWidth * 0.6
+      const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+      const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+      const height = Math.max(28, estimatedLines * 16 + 16)
+      
+      const iconX = containerWidth / 2 - 8
+      const iconY = -height / 2 + 8
+      
+      // 直接设置固定位置，不使用transform来避免hover时的循环重新计算
+      d3.select(this).attr('transform', `translate(${iconX}, ${iconY})`)
     })
 
   // 更新文本内容和样式
@@ -556,6 +656,30 @@ function updateNodeStyles() {
       const textBackground = node.select('.text-background')
       textBackground.classed('current ancestor starred default', false)
       textBackground.classed(colorClass, true)
+      
+      // 更新评论图标边框颜色和图标颜色，与节点边框颜色保持一致
+      const commentIconCircle = node.select('.comment-icon circle')
+      const commentIconDiv = node.select('.comment-icon foreignObject div')
+      
+      if (!commentIconCircle.empty()) {
+        let iconColor = '#c8c8c8' // 默认灰色
+        
+        if (colorClass === 'current') {
+          iconColor = '#4696ff' // 深蓝色
+        } else if (colorClass === 'ancestor') {
+          iconColor = '#45b6f4' // 浅蓝色
+        } else if (colorClass === 'starred') {
+          iconColor = '#bd9035' // 金色
+        }
+        
+        // 更新边框颜色
+        commentIconCircle.attr('stroke', iconColor)
+        
+        // 更新图标颜色
+        if (!commentIconDiv.empty()) {
+          commentIconDiv.style('color', iconColor)
+        }
+      }
     })
 
   // 更新连接线样式
@@ -573,6 +697,130 @@ function handleNodeClick(node: ConversationTreeNode) {
   // 如果右边栏处于隐藏状态，自动唤出到正常展示状态
   if (layoutStore.chatPanelMode === 'hidden') {
     layoutStore.setChatPanelMode('normal')
+  }
+}
+
+// 评论图标点击事件
+function handleCommentIconClick(node: ConversationTreeNode, event: MouseEvent | any, targetElement: SVGGElement) {
+  console.log('评论图标点击事件触发', node, event, targetElement)
+  
+  if (node.comment && node.comment.trim()) {
+    console.log('节点有评论内容:', node.comment)
+    
+    currentCommentData.value = {
+      conversationId: node.conversationId,
+      comment: node.comment,
+      targetElement: targetElement
+    }
+    
+    // 计算并设置气泡位置
+    updateCommentBubblePosition()
+    
+    showCommentBubble.value = true
+    console.log('显示评论气泡', showCommentBubble.value, currentCommentData.value)
+    
+    // 确保在下一个tick中清除hiding类（如果存在）
+    nextTick(() => {
+      const bubbleElement = document.querySelector('.comment-bubble')
+      if (bubbleElement) {
+        bubbleElement.classList.remove('hiding')
+      }
+    })
+  } else {
+    console.log('节点没有评论内容')
+  }
+}
+
+// 更新评论气泡位置
+function updateCommentBubblePosition() {
+  if (!currentCommentData.value?.targetElement || !containerRef.value) return
+  
+  const rect = currentCommentData.value.targetElement.getBoundingClientRect()
+  const containerRect = containerRef.value.getBoundingClientRect()
+  
+  // 根据评论内容长度动态计算宽度
+  const comment = currentCommentData.value.comment
+  const maxWidth = 550
+  
+  // 更智能的宽度计算
+  const lines = comment.split('\n')
+  const maxLineLength = Math.max(...lines.map(line => line.length))
+  
+  // 基于最长行的长度计算宽度（中文字符约14px，英文约8px）
+  let estimatedWidth = maxLineLength * 12 + 40 // 40px为padding
+  
+  // 根据内容长度动态调整最小宽度
+  let minWidth
+  if (comment.length < 10) {
+    minWidth = 200 // 很短的内容
+  } else if (comment.length < 30) {
+    minWidth = 300 // 短内容
+  } else if (comment.length < 80) {
+    minWidth = 380 // 中等内容
+  } else {
+    minWidth = 420 // 长内容
+  }
+  
+  // 确保在最小和最大宽度范围内
+  const dynamicWidth = Math.max(minWidth, Math.min(maxWidth, estimatedWidth))
+  
+  console.log('气泡宽度计算:', {
+    comment: comment.substring(0, 50) + (comment.length > 50 ? '...' : ''),
+    commentLength: comment.length,
+    maxLineLength,
+    estimatedWidth,
+    minWidth,
+    dynamicWidth
+  })
+  
+  commentBubbleStyle.value = {
+    position: 'absolute',
+    left: (rect.left - containerRect.left + rect.width / 2) + 'px',
+    top: (rect.top - containerRect.top - 10) + 'px',
+    transform: 'translateX(-50%) translateY(-100%)',
+    zIndex: 1000,
+    width: dynamicWidth + 'px'
+  }
+}
+
+// 关闭评论气泡
+function handleCloseCommentBubble() {
+  if (!showCommentBubble.value) return // 避免重复关闭
+  
+  // 添加退场动画
+  const bubbleElement = document.querySelector('.comment-bubble')
+  if (bubbleElement && !bubbleElement.classList.contains('hiding')) {
+    bubbleElement.classList.add('hiding')
+    
+    // 动画完成后隐藏并清理状态
+    setTimeout(() => {
+      showCommentBubble.value = false
+      currentCommentData.value = null
+      // 清理hiding类，为下次显示做准备
+      const bubbleElementAfter = document.querySelector('.comment-bubble')
+      if (bubbleElementAfter) {
+        bubbleElementAfter.classList.remove('hiding')
+      }
+    }, 200) // 与CSS动画时长匹配
+  } else {
+    // 如果没有找到元素或已经在hiding状态，直接隐藏
+    showCommentBubble.value = false
+    currentCommentData.value = null
+  }
+}
+
+// 全局点击处理，用于关闭评论气泡
+function handleGlobalClick(event: MouseEvent) {
+  // 检查点击的元素是否是评论气泡或其子元素
+  const target = event.target as Element
+  const commentBubble = document.querySelector('.comment-bubble')
+  const commentIcon = target.closest('.comment-icon')
+  
+  // 如果点击的不是评论气泡、评论图标或其子元素，则关闭气泡
+  if (showCommentBubble.value && 
+      !commentBubble?.contains(target) && 
+      !commentIcon) {
+    handleCloseCommentBubble()
   }
 }
 
@@ -629,6 +877,11 @@ function hideTooltip() {
 function fitToScreen() {
   if (!svg || !g || !containerRef.value) return
 
+  // 关闭评论气泡
+  if (showCommentBubble.value) {
+    handleCloseCommentBubble()
+  }
+
   const container = containerRef.value
   const width = container.clientWidth
   const height = container.clientHeight
@@ -664,6 +917,11 @@ function fitToScreen() {
 function resetZoom() {
   if (!svg) return
 
+  // 关闭评论气泡
+  if (showCommentBubble.value) {
+    handleCloseCommentBubble()
+  }
+
   svg.transition()
     .duration(750)
     .call(zoom.transform, d3.zoomIdentity)
@@ -679,6 +937,11 @@ function handleResize() {
   const height = container.clientHeight
 
   svg.attr('width', width).attr('height', height)
+  
+  // 窗口大小变化时关闭评论气泡
+  if (showCommentBubble.value) {
+    handleCloseCommentBubble()
+  }
 }
 
 // ===== 拖拽处理函数 =====
@@ -888,6 +1151,11 @@ function loadCustomPositions() {
 function resetLayout() {
   if (!conversationTree.value || !g) return
   
+  // 关闭评论气泡
+  if (showCommentBubble.value) {
+    handleCloseCommentBubble()
+  }
+  
   // 创建层次结构来获取默认位置
   const root = d3.hierarchy(conversationTree.value, d => d.children)
   tree(root)
@@ -1092,6 +1360,26 @@ function resetLayout() {
       //stroke-width: 2px;
     }
   }
+  
+  .comment-icon {
+    circle {
+      transition: fill 0.2s ease;
+    }
+    
+    &:hover circle {
+      fill: #ffffff;
+      transform: scale(1.1);
+      transition: 0.2s ease;
+    }
+    
+    :deep(foreignObject div) {
+      transition: transform 0.2s ease;
+    }
+    
+    &:hover :deep(foreignObject div) {
+      transform: scale(1.2);
+    }
+  }
 }
 
 .tree-tooltip {
@@ -1112,5 +1400,89 @@ function resetLayout() {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+// 评论气泡样式
+.comment-bubble {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 450px; // 默认宽度，会被JavaScript动态覆盖
+  max-width: 550px;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.12), 
+    0 4px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  
+  // 入场动画
+  animation: commentBubbleShow 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  
+  // 位置变化时的平滑过渡
+  transition: left 0.2s ease-out, top 0.2s ease-out;
+  
+  // 退场动画（通过JS类控制）
+  &.hiding {
+    animation: commentBubbleHide 0.2s ease-in forwards;
+  }
+  
+  // 气泡箭头 - 与气泡背景色匹配
+  .comment-bubble-arrow {
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(255, 255, 255, 0.95);
+  }
+  
+  // 隐藏滚动条，但保持滚动功能
+  &::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+  }
+  
+  // 兼容Firefox
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  .comment-bubble-content {
+    margin: 0;
+  }
+}
+
+// 评论气泡动画
+@keyframes commentBubbleShow {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-100%) scale(1);
+  }
+}
+
+@keyframes commentBubbleHide {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-100%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%) scale(0.9);
+  }
 }
 </style>

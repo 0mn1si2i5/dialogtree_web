@@ -166,15 +166,18 @@
     <a-modal
       v-model:visible="showCommentModalVisible"
       title="添加评论"
+      width="600px"
+      :body-style="{ padding: '10px 20px 0 20px' }"
+      :footer-style="{ borderTop: '10px solid #f0f0f0', paddingTop: '10px' }"
       @ok="handleSaveComment"
       @cancel="handleCancelComment"
     >
       <a-form :model="commentForm" layout="vertical">
-        <a-form-item label="评论内容">
+        <a-form-item>
           <a-textarea
             v-model="commentForm.comment"
             placeholder="请输入评论..."
-            :auto-size="{ minRows: 3, maxRows: 6 }"
+            :auto-size="{ minRows: 4, maxRows: 10 }"
             @keydown.ctrl.enter="handleSaveComment"
           />
         </a-form-item>

@@ -38,7 +38,9 @@ export default {
     star: '收藏',
     unstar: '取消收藏',
     addComment: '添加评论',
-    continueConversation: '从此处继续对话'
+    continueConversation: '从此处继续对话',
+    comment: '评论',
+    viewComment: '查看评论'
   },
   
   tree: {
