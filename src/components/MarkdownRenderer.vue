@@ -87,11 +87,14 @@ const props = withDefaults(defineProps<Props>(), {
       }
     }
     
-    // 修复md-editor-v3代码块间隙
+    // 修复md-editor-v3代码块间隙和sticky定位问题
     .md-editor-code {
       summary.md-editor-code-head {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
+        // 禁用粘性定位，防止滚动时头部固定在顶部
+        position: static !important;
+        position: relative !important;
       }
       
       pre {
@@ -103,11 +106,36 @@ const props = withDefaults(defineProps<Props>(), {
       &[open] {
         summary {
           margin-bottom: 0 !important;
+          // 确保展开时也不使用sticky定位
+          position: static !important;
+          position: relative !important;
         }
         
         pre {
           margin-top: 0 !important;
         }
+      }
+    }
+    
+    // 全局禁用md-editor-v3中所有可能的sticky定位
+    .md-editor-code-head,
+    summary.md-editor-code-head,
+    details summary,
+    .md-editor-code summary {
+      position: static !important;
+      position: relative !important;
+      top: auto !important;
+      z-index: auto !important;
+      // 确保sticky属性被覆盖
+      position: -webkit-static !important;
+      position: -moz-static !important;
+    }
+    
+    // 针对可能使用sticky的任何元素进行全面覆盖
+    * {
+      &[style*="sticky"],
+      &[class*="sticky"] {
+        position: static !important;
       }
     }
     

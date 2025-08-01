@@ -5,20 +5,33 @@
       <div class="header-title">
         <span v-if="currentSession">{{ currentSession.title }}</span>
         <span v-else>{{ $t('chat.selectSession') }}</span>
+        
+        <!-- 重命名会话按钮 -->
+        <a-button 
+          v-if="currentSession"
+          type="text" 
+          size="mini"
+          @click="showRenameSessionDialog"
+          title="重命名会话"
+          class="rename-session-btn"
+        >
+          <template #icon>
+            <icon-edit />
+          </template>
+        </a-button>
       </div>
       
       <div class="header-actions">
-        <!-- 按钮 a: 最大化/恢复正常大小 -->
+        <!-- 按钮 a: 隐藏聊天面板 -->
         <a-button 
           v-if="chatPanelMode !== 'hidden'"
           type="text" 
           size="small" 
-          @click="toggleMaximize"
-          :title="chatPanelMode === 'normal' ? $t('tree.expandPanel') : $t('tree.restorePanel')"
+          @click="hideChatPanel"
+          title="隐藏聊天面板"
         >
           <template #icon>
-            <icon-left v-if="chatPanelMode === 'normal'" />
-            <icon-right v-else />
+            <icon-right />
           </template>
         </a-button>
       </div>
@@ -194,6 +207,27 @@
         </a-button>
       </template>
     </a-modal>
+
+    <!-- 重命名会话模态框 -->
+    <a-modal
+      v-model:visible="showRenameSessionModal"
+      title="重命名会话"
+      width="400px"
+      :body-style="{ padding: '20px' }"
+      :ok-loading="renameSessionLoading"
+      @ok="handleRenameSession"
+      @cancel="resetRenameSessionForm"
+    >
+      <a-form :model="renameSessionForm" layout="vertical">
+        <a-form-item label="会话标题" required>
+          <a-input 
+            v-model="renameSessionForm.title"
+            placeholder="请输入会话标题..."
+            @keydown.enter="handleRenameSession"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -212,7 +246,8 @@ import {
   IconSend,
   IconLeft,
   IconRight,
-  IconCopy
+  IconCopy,
+  IconEdit
 } from '@arco-design/web-vue/es/icon'
 import dayjs from 'dayjs'
 import type { ChatMessage } from '@/types'
@@ -232,6 +267,14 @@ const commentLoading = ref(false)
 const commentForm = ref({
   conversationId: null as number | null,
   comment: '',
+})
+
+// 重命名会话相关状态
+const showRenameSessionModal = ref(false)
+const renameSessionLoading = ref(false)
+const renameSessionForm = ref({
+  sessionId: null as number | null,
+  title: '',
 })
 
 // 计算属性
@@ -372,12 +415,53 @@ function scrollToBottom() {
   }
 }
 
-// 切换最大化状态
-function toggleMaximize() {
-  if (chatPanelMode.value === 'normal') {
-    layoutStore.setChatPanelMode('expanded')
-  } else if (chatPanelMode.value === 'expanded') {
-    layoutStore.setChatPanelMode('normal')
+// 隐藏聊天面板
+function hideChatPanel() {
+  layoutStore.setChatPanelMode('hidden')
+}
+
+// 显示重命名会话对话框
+function showRenameSessionDialog() {
+  if (!currentSession.value) return
+  
+  renameSessionForm.value = {
+    sessionId: currentSession.value.id,
+    title: currentSession.value.title
+  }
+  showRenameSessionModal.value = true
+}
+
+// 处理会话重命名
+async function handleRenameSession() {
+  if (!renameSessionForm.value.title?.trim() || !renameSessionForm.value.sessionId) {
+    Message.warning('请输入会话标题')
+    return
+  }
+  
+  try {
+    renameSessionLoading.value = true
+    const currentSession = sessionStore.currentSession
+    
+    await sessionStore.updateSession(renameSessionForm.value.sessionId, {
+      title: renameSessionForm.value.title.trim(),
+      categoryID: currentSession?.categoryID || 1,
+    })
+    
+    Message.success('重命名成功')
+    showRenameSessionModal.value = false
+    resetRenameSessionForm()
+  } catch (error) {
+    Message.error('重命名失败')
+  } finally {
+    renameSessionLoading.value = false
+  }
+}
+
+// 重置重命名表单
+function resetRenameSessionForm() {
+  renameSessionForm.value = {
+    sessionId: null,
+    title: '',
   }
 }
 
@@ -403,9 +487,25 @@ function toggleMaximize() {
 }
 
 .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 500;
   font-size: 16px;
   color: #333;
+  
+  .rename-session-btn {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    
+    &:hover {
+      color: #1890ff;
+    }
+  }
+  
+  &:hover .rename-session-btn {
+    opacity: 1;
+  }
 }
 
 .header-actions {

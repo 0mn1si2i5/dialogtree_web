@@ -46,14 +46,15 @@
       <section class="chat-area">
         <RightPanel />
         
-        <!-- 右边栏隐藏按钮 -->
+        <!-- 右边栏最大化/恢复按钮 -->
         <div 
           v-show="chatPanelMode !== 'hidden'"
-          class="chat-panel-hide-btn"
-          @click="hideChatPanel"
-          title="隐藏聊天面板"
+          class="chat-panel-maximize-btn"
+          @click="toggleMaximize"
+          :title="chatPanelMode === 'normal' ? '最大化聊天面板' : '恢复正常大小'"
         >
-          <icon-right />
+          <icon-left v-if="chatPanelMode === 'normal'" />
+          <icon-right v-else />
         </div>
       </section>
 
@@ -113,9 +114,13 @@ function restoreChatPanel() {
   layoutStore.setChatPanelMode('normal')
 }
 
-// 隐藏聊天面板
-function hideChatPanel() {
-  layoutStore.setChatPanelMode('hidden')
+// 切换聊天面板最大化状态
+function toggleMaximize() {
+  if (chatPanelMode.value === 'normal') {
+    layoutStore.setChatPanelMode('expanded')
+  } else if (chatPanelMode.value === 'expanded') {
+    layoutStore.setChatPanelMode('normal')
+  }
 }
 
 // 教学Modal事件处理
@@ -321,8 +326,8 @@ onMounted(async () => {
   }
 }
 
-// 右边栏隐藏按钮
-.chat-panel-hide-btn {
+// 右边栏最大化/恢复按钮（原来的隐藏按钮位置）
+.chat-panel-maximize-btn {
   position: absolute;
   top: 50%;
   left: -20px; // 只露出一半

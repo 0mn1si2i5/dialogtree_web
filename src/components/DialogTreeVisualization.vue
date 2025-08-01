@@ -208,13 +208,17 @@ onUnmounted(() => {
 })
 
 // 监听数据变化
-watch(conversationTree, (newTree) => {
+watch(conversationTree, (newTree, oldTree) => {
   nextTick(() => {
     if (!newTree) {
       // 如果数据为空，清空所有D3渲染内容
       clearTree()
     } else {
-      renderTree()
+      // 智能判断是否需要重置视角：
+      // 1. 首次加载（从null到有数据）
+      // 2. 会话切换（结构发生重大变化）
+      const shouldFitScreen = !oldTree || (oldTree && newTree.id !== oldTree.id)
+      renderTree(shouldFitScreen)
     }
   })
 }, { deep: true })
@@ -300,7 +304,7 @@ function clearTree() {
 }
 
 // ===== 渲染树形图 =====
-function renderTree() {
+function renderTree(shouldFitScreen = true) {
   if (!conversationTree.value || !g) return
 
   // 清除之前的渲染内容
@@ -319,8 +323,10 @@ function renderTree() {
   // 渲染节点
   renderNodes(root.descendants())
 
-  // 自动居中显示
-  fitToScreen()
+  // 智能控制是否重置视角
+  if (shouldFitScreen) {
+    fitToScreen()
+  }
 }
 
 // 获取连接线颜色
@@ -417,9 +423,10 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
       const getContainerBounds = (node: any) => {
         // 使用相同的显示文本逻辑确保一致性
         const displayText = getDisplayText(node.data)
-        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-        const usableWidth = containerWidth * 0.6
-        const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+        const estimatedTextWidth = calculateTextWidth(displayText)
+        const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40))
+        const usableWidth = containerWidth * 0.88
+        const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
@@ -561,7 +568,7 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .style('align-items', 'center')
     .style('justify-content', 'center')
     .style('color', '#c8c8c8')
-    .html('<svg viewBox="0 0 48 48" width="14" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter"><path d="M7 42h42M13.5 29.5 27.96 15.04a2.5 2.5 0 0 1 3.54 0l2.96 2.96a2.5 2.5 0 0 1 0 3.54L20 35.96V42h-6.5v-6.5Z"></path></svg>')
+    .html('<svg viewBox="0 0 48 48" width="14" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M36 6a4 4 0 0 1 4 4v0a4 4 0 0 1-1.17 2.83L16 36l-8 2 2-8L33.17 7.17A4 4 0 0 1 36 6z"></path><path d="M32 10L38 16"></path></svg>')
 
   // 更新现有节点
   const nodeUpdate = nodeEnter.merge(nodeSelection)
@@ -579,9 +586,10 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     
     // 计算节点容器尺寸
     const displayText = getDisplayText(d.data)
-    const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-    const usableWidth = containerWidth * 0.6
-    const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+    const estimatedTextWidth = calculateTextWidth(displayText)
+    const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40))
+    const usableWidth = containerWidth * 0.88
+    const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
     const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
     const height = Math.max(28, estimatedLines * 16 + 16)
     
@@ -642,26 +650,46 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'central')
       
-      // 计算container参数 - 使用超保守的估算  
-      const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-      const usableWidth = containerWidth * 0.6 // 只使用container宽度的60%，留出40%边距
-      const maxCharsPerLine = Math.floor(usableWidth / 10) // 每字符按10px计算，非常保守
+      // 计算container参数 - 基于文本实际宽度
+      const estimatedTextWidth = calculateTextWidth(displayText)
+      const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40)) // 增加容器基础宽度
+      const usableWidth = containerWidth * 0.88 // 使用container宽度的88%
+      const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
       
-      // 确保最小字符数，但也不能太多
-      const safeMaxChars = Math.max(6, Math.min(12, maxCharsPerLine))
+      // 确保合理的字符数范围
+      const safeMaxChars = Math.max(8, Math.min(20, maxCharsPerLine))
       
-      // 换行处理
+      // 智能换行处理 - 考虑中英文字符宽度
       const lines: string[] = []
       let remainingText = displayText
       
       while (remainingText.length > 0 && lines.length < 3) {
-        if (remainingText.length <= safeMaxChars) {
-          lines.push(remainingText)
-          break
-        } else {
-          lines.push(remainingText.substring(0, safeMaxChars))
-          remainingText = remainingText.substring(safeMaxChars)
+        let currentLine = ''
+        let currentWidth = 0
+        let i = 0
+        
+        // 逐字符检查，直到达到可用宽度
+        while (i < remainingText.length) {
+          const char = remainingText[i]
+          const charWidth = /[\u4e00-\u9fa5\u3400-\u4dbf\uff00-\uffef]/.test(char) ? 14 : 8
+          
+          if (currentWidth + charWidth > usableWidth) {
+            break
+          }
+          
+          currentLine += char
+          currentWidth += charWidth
+          i++
         }
+        
+        // 如果没有任何字符能放入，至少放一个字符避免无限循环
+        if (currentLine.length === 0 && remainingText.length > 0) {
+          currentLine = remainingText[0]
+          i = 1
+        }
+        
+        lines.push(currentLine)
+        remainingText = remainingText.substring(i)
       }
       
       // 如果还有剩余文本，在最后一行添加省略号
@@ -687,10 +715,11 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
     .each(function(d) {
       const displayText = getDisplayText(d.data)
       
-      // 计算container尺寸
-      const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-      const usableWidth = containerWidth * 0.6
-      const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+      // 计算container尺寸 - 基于文本实际宽度
+      const estimatedTextWidth = calculateTextWidth(displayText)
+      const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40))
+      const usableWidth = containerWidth * 0.88
+      const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
       const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
       
       const width = containerWidth
@@ -1030,18 +1059,54 @@ function fitToScreen() {
   }
 }
 
-// 重置缩放
+// 重置缩放到实际大小，但保持居中
 function resetZoom() {
-  if (!svg) return
+  if (!svg || !g || !containerRef.value) return
 
   // 关闭评论气泡
   if (showCommentBubble.value) {
     handleCloseCommentBubble()
   }
 
-  svg.transition()
-    .duration(750)
-    .call(zoom.transform, d3.zoomIdentity)
+  const container = containerRef.value
+  const width = container.clientWidth
+  const height = container.clientHeight
+
+  try {
+    const bounds = g.node()?.getBBox()
+    if (!bounds || bounds.width === 0 || bounds.height === 0) {
+      // 如果无法获取边界，直接重置到中心
+      const transform = d3.zoomIdentity
+        .translate(width / 2, height / 2)
+      
+      svg.transition()
+        .duration(750)
+        .call(zoom.transform, transform)
+      return
+    }
+
+    const midX = bounds.x + bounds.width / 2
+    const midY = bounds.y + bounds.height / 2
+
+    // 创建变换：缩放为1倍，但将内容中心移到屏幕中心
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(1)
+      .translate(-midX, -midY)
+
+    svg.transition()
+      .duration(750)
+      .call(zoom.transform, transform)
+  } catch (error) {
+    console.warn('Failed to reset zoom with centering:', error)
+    // 降级方案：简单居中
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+    
+    svg.transition()
+      .duration(750)
+      .call(zoom.transform, transform)
+  }
 }
 
 
@@ -1193,9 +1258,10 @@ function updateLinksPosition() {
       const getContainerBounds = (node: any) => {
         // 使用相同的显示文本逻辑确保一致性
         const displayText = getDisplayText(node.data)
-        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-        const usableWidth = containerWidth * 0.6
-        const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+        const estimatedTextWidth = calculateTextWidth(displayText)
+        const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40))
+        const usableWidth = containerWidth * 0.88
+        const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
@@ -1298,9 +1364,10 @@ function resetLayout() {
       const getContainerBounds = (node: any) => {
         // 使用相同的显示文本逻辑确保一致性
         const displayText = getDisplayText(node.data)
-        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
-        const usableWidth = containerWidth * 0.6
-        const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+        const estimatedTextWidth = calculateTextWidth(displayText)
+        const containerWidth = Math.max(140, Math.min(220, estimatedTextWidth + 40))
+        const usableWidth = containerWidth * 0.88
+        const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
@@ -1341,6 +1408,41 @@ function getDisplayText(node: ConversationTreeNode): string {
   // 检查title是否存在且不为空（去除空格后）
   const hasValidTitle = node.title && node.title.trim().length > 0
   return hasValidTitle ? node.title.trim() : (node.summary || 'No summary')
+}
+
+// 计算文本的实际像素宽度（区分中英文字符）
+function calculateTextWidth(text: string): number {
+  let width = 0
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    // 检查是否为中文字符、全角字符或其他宽字符
+    if (/[\u4e00-\u9fa5\u3400-\u4dbf\uff00-\uffef]/.test(char)) {
+      width += 14 // 中文字符约14px
+    } else {
+      width += 8 // 英文字符约8px
+    }
+  }
+  return width
+}
+
+// 智能计算每行最大字符数
+function calculateMaxCharsPerLine(text: string, availableWidth: number): number {
+  let currentWidth = 0
+  let charCount = 0
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    const charWidth = /[\u4e00-\u9fa5\u3400-\u4dbf\uff00-\uffef]/.test(char) ? 14 : 8
+    
+    if (currentWidth + charWidth > availableWidth) {
+      break
+    }
+    
+    currentWidth += charWidth
+    charCount++
+  }
+  
+  return Math.max(6, charCount) // 最少6个字符
 }
 
 // 标题编辑图标点击事件
@@ -1403,8 +1505,8 @@ async function handleSaveTitleEdit() {
         // 等待数据更新完成，然后强制重新渲染树结构
         await nextTick()
         await nextTick(() => {
-          // 完全重新渲染树结构，确保连接线和节点尺寸都得到更新
-          renderTree()
+          // 完全重新渲染树结构，但保持当前视角
+          renderTree(false) // 不重置视角
           // 再次更新连接线位置以确保它们正确连接到调整后的节点
           updateLinksPosition()
         })
