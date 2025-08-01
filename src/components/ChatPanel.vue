@@ -325,7 +325,7 @@ async function handleSaveComment() {
     commentLoading.value = true
     await dialogStore.updateComment(
       commentForm.value.conversationId,
-      commentForm.value.comment.trim()
+      commentForm.value.comment // 不使用 trim()，允许保存空评论（包括空字符串）
     )
     Message.success('评论保存成功')
     showCommentModalVisible.value = false

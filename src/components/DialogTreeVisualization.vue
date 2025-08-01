@@ -77,6 +77,42 @@
         {{ currentCommentData?.comment }}
       </div>
     </div>
+
+    <!-- 标题编辑模态框 -->
+    <a-modal
+      v-model:visible="showTitleEditModal"
+      title="编辑对话标题"
+      width="450px"
+      :body-style="{ padding: '20px' }"
+      :ok-loading="titleEditLoading"
+      @cancel="handleCancelTitleEdit"
+    >
+      <div class="title-edit-content">
+        <div class="current-title-section">
+          <label class="title-label">当前标题：</label>
+          <span class="current-title-text">{{ titleEditForm.currentTitle || '无标题' }}</span>
+        </div>
+        <a-form-item label="新标题" style="margin-top: 16px;">
+          <a-input 
+            v-model="titleEditForm.newTitle"
+            placeholder="请输入新标题..."
+            @keydown.enter="handleSaveTitleEdit"
+            ref="titleInputRef"
+          />
+        </a-form-item>
+      </div>
+      
+      <template #footer>
+        <a-button @click="handleCancelTitleEdit">取消</a-button>
+        <a-button 
+          type="primary" 
+          @click="handleSaveTitleEdit"
+          :loading="titleEditLoading"
+        >
+          保存
+        </a-button>
+      </template>
+    </a-modal>
   </div>
 </template>
 
@@ -113,6 +149,16 @@ const tooltipStyle = ref({})
 const showCommentBubble = ref(false)
 const currentCommentData = ref<{ conversationId: number; comment: string; targetElement?: SVGGElement } | null>(null)
 const commentBubbleStyle = ref({})
+
+// 标题编辑相关状态
+const showTitleEditModal = ref(false)
+const titleEditForm = ref({
+  conversationId: null as number | null,
+  currentTitle: '',
+  newTitle: ''
+})
+const titleEditLoading = ref(false)
+const titleInputRef = ref<any>(null)
 let lastTransform: d3.ZoomTransform | null = null
 
 // 拖拽相关状态
@@ -257,6 +303,10 @@ function clearTree() {
 function renderTree() {
   if (!conversationTree.value || !g) return
 
+  // 清除之前的渲染内容
+  g.selectAll('.link').remove()
+  g.selectAll('.node').remove()
+
   // 创建层次结构
   const root = d3.hierarchy(conversationTree.value, d => d.children)
   
@@ -365,11 +415,12 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
       
       // 计算容器尺寸和位置（考虑自定义位置）
       const getContainerBounds = (node: any) => {
-        const summary = node.data.summary || node.data.content || 'No summary'
-        const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+        // 使用相同的显示文本逻辑确保一致性
+        const displayText = getDisplayText(node.data)
+        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
         const usableWidth = containerWidth * 0.6
         const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
-        const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+        const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
         // 使用自定义位置或默认位置
@@ -464,13 +515,13 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .attr('stroke-width', 2)
 
   // 添加SVG foreignObject来渲染消息图标
-  const iconContainer = commentIcon.append('foreignObject')
+  const commentIconContainer = commentIcon.append('foreignObject')
     .attr('x', -7)
     .attr('y', -7)
     .attr('width', 14)
     .attr('height', 14)
     
-  iconContainer.append('xhtml:div')
+  commentIconContainer.append('xhtml:div')
     .style('width', '14px')
     .style('height', '14px')
     .style('display', 'flex')
@@ -478,6 +529,39 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     .style('justify-content', 'center')
     .style('color', '#c8c8c8')
     .html('<svg viewBox="0 0 48 48" width="14" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter"><path d="M15 20h18m-18 9h9M7 41h17.63C33.67 41 41 33.67 41 24.63V24c0-9.389-7.611-17-17-17S7 14.611 7 24v17Z"></path></svg>')
+
+  // 添加标题编辑图标（所有节点都有）
+  const titleEditIcon = nodeEnter.append('g')
+    .attr('class', 'title-edit-icon')
+    .style('opacity', 1)
+    .style('cursor', 'pointer')
+    .on('click', function(event, d) {
+      event.stopPropagation() // 阻止节点点击事件
+      handleTitleEditIconClick(d.data)
+    })
+
+  // 标题编辑图标背景圆圈
+  titleEditIcon.append('circle')
+    .attr('r', 10)
+    .attr('fill', '#fff')
+    .attr('stroke', '#c8c8c8')
+    .attr('stroke-width', 2)
+
+  // 添加SVG foreignObject来渲染编辑图标
+  const titleIconContainer = titleEditIcon.append('foreignObject')
+    .attr('x', -7)
+    .attr('y', -7)
+    .attr('width', 14)
+    .attr('height', 14)
+    
+  titleIconContainer.append('xhtml:div')
+    .style('width', '14px')
+    .style('height', '14px')
+    .style('display', 'flex')
+    .style('align-items', 'center')
+    .style('justify-content', 'center')
+    .style('color', '#c8c8c8')
+    .html('<svg viewBox="0 0 48 48" width="14" height="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter"><path d="M7 42h42M13.5 29.5 27.96 15.04a2.5 2.5 0 0 1 3.54 0l2.96 2.96a2.5 2.5 0 0 1 0 3.54L20 35.96V42h-6.5v-6.5Z"></path></svg>')
 
   // 更新现有节点
   const nodeUpdate = nodeEnter.merge(nodeSelection)
@@ -489,28 +573,48 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
       return customPos ? `translate(${customPos.x},${customPos.y})` : `translate(${d.x},${d.y})`
     })
 
-  // 更新评论图标显示状态和位置
-  nodeEnter.merge(nodeSelection).select('.comment-icon')
-    .style('opacity', d => {
-      const hasComment = d.data.comment && d.data.comment.trim()
-      console.log(`节点 ${d.data.conversationId} 评论状态:`, hasComment, d.data.comment)
-      return hasComment ? 1 : 0
-    })
-    .each(function(d) {
-      // 计算评论图标位置（节点右上角）- 只计算一次，避免重复计算导致移动
-      const summary = d.data.summary || d.data.content || 'No summary'
-      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
-      const usableWidth = containerWidth * 0.6
-      const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
-      const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
-      const height = Math.max(28, estimatedLines * 16 + 16)
-      
-      const iconX = containerWidth / 2 - 8
-      const iconY = -height / 2 + 8
-      
-      // 直接设置固定位置，不使用transform来避免hover时的循环重新计算
-      d3.select(this).attr('transform', `translate(${iconX}, ${iconY})`)
-    })
+  // 更新图标显示状态和位置
+  nodeEnter.merge(nodeSelection).each(function(d) {
+    const nodeElement = d3.select(this)
+    
+    // 计算节点容器尺寸
+    const displayText = getDisplayText(d.data)
+    const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
+    const usableWidth = containerWidth * 0.6
+    const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
+    const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
+    const height = Math.max(28, estimatedLines * 16 + 16)
+    
+    // 检查哪些图标需要显示
+    const hasComment = d.data.comment && d.data.comment.trim()
+    const needsCommentIcon = hasComment
+    const needsTitleEditIcon = true // 所有节点都有标题编辑功能
+    
+    // 计算图标位置
+    const baseIconY = -height / 2 + 8
+    
+    // 更新标题编辑图标（右上角，默认隐藏）
+    const titleEditIcon = nodeElement.select('.title-edit-icon')
+    if (needsTitleEditIcon) {
+      const titleIconX = containerWidth / 2 - 8  // 右上角
+      titleEditIcon
+        .style('opacity', 0) // 默认隐藏
+        .attr('transform', `translate(${titleIconX}, ${baseIconY})`)
+    } else {
+      titleEditIcon.style('opacity', 0)
+    }
+    
+    // 更新评论图标（左上角）
+    const commentIcon = nodeElement.select('.comment-icon')
+    if (needsCommentIcon) {
+      const commentIconX = -containerWidth / 2 + 8  // 左上角
+      commentIcon
+        .style('opacity', 1)
+        .attr('transform', `translate(${commentIconX}, ${baseIconY})`)
+    } else {
+      commentIcon.style('opacity', 0)
+    }
+  })
 
   // 更新文本内容和样式
   updateNodeTexts(nodeUpdate)
@@ -527,7 +631,7 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
   selection.select('.text-content')
     .each(function(d) {
       const textElement = d3.select(this)
-      const summary = d.data.summary || d.data.content || 'No summary'
+      const displayText = getDisplayText(d.data)
       
       // 清空现有文本
       textElement.text('')
@@ -538,8 +642,8 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'central')
       
-      // 计算container参数 - 使用超保守的估算
-      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+      // 计算container参数 - 使用超保守的估算  
+      const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
       const usableWidth = containerWidth * 0.6 // 只使用container宽度的60%，留出40%边距
       const maxCharsPerLine = Math.floor(usableWidth / 10) // 每字符按10px计算，非常保守
       
@@ -548,7 +652,7 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
       
       // 换行处理
       const lines: string[] = []
-      let remainingText = summary
+      let remainingText = displayText
       
       while (remainingText.length > 0 && lines.length < 3) {
         if (remainingText.length <= safeMaxChars) {
@@ -581,13 +685,13 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
   // 更新文本背景
   selection.select('.text-background')
     .each(function(d) {
-      const summary = d.data.summary || d.data.content || 'No summary'
+      const displayText = getDisplayText(d.data)
       
       // 计算container尺寸
-      const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+      const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
       const usableWidth = containerWidth * 0.6
       const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
-      const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+      const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
       
       const width = containerWidth
       const height = Math.max(28, estimatedLines * 16 + 16) // 进一步增加高度边距
@@ -620,9 +724,13 @@ function addNodeInteractions(selection: d3.Selection<SVGGElement, d3.HierarchyNo
     })
     .on('mouseenter', (event, d) => {
       handleNodeMouseEnter(event, d.data)
+      // 显示标题编辑按钮
+      d3.select(event.currentTarget).select('.title-edit-icon').style('opacity', 1)
     })
     .on('mouseleave', () => {
       handleNodeMouseLeave()
+      // 隐藏标题编辑按钮
+      d3.selectAll('.title-edit-icon').style('opacity', 0)
     })
     .on('mousemove', function(event) {
       // 根据是否按住修饰键动态改变鼠标样式（支持Cmd键或Alt键）
@@ -657,27 +765,36 @@ function updateNodeStyles() {
       textBackground.classed('current ancestor starred default', false)
       textBackground.classed(colorClass, true)
       
-      // 更新评论图标边框颜色和图标颜色，与节点边框颜色保持一致
+      // 更新图标边框颜色和图标颜色，与节点边框颜色保持一致
+      let iconColor = '#c8c8c8' // 默认灰色
+      
+      if (colorClass === 'current') {
+        iconColor = '#4696ff' // 深蓝色
+      } else if (colorClass === 'ancestor') {
+        iconColor = '#45b6f4' // 浅蓝色
+      } else if (colorClass === 'starred') {
+        iconColor = '#bd9035' // 金色
+      }
+      
+      // 更新评论图标颜色
       const commentIconCircle = node.select('.comment-icon circle')
       const commentIconDiv = node.select('.comment-icon foreignObject div')
       
       if (!commentIconCircle.empty()) {
-        let iconColor = '#c8c8c8' // 默认灰色
-        
-        if (colorClass === 'current') {
-          iconColor = '#4696ff' // 深蓝色
-        } else if (colorClass === 'ancestor') {
-          iconColor = '#45b6f4' // 浅蓝色
-        } else if (colorClass === 'starred') {
-          iconColor = '#bd9035' // 金色
-        }
-        
-        // 更新边框颜色
         commentIconCircle.attr('stroke', iconColor)
-        
-        // 更新图标颜色
         if (!commentIconDiv.empty()) {
           commentIconDiv.style('color', iconColor)
+        }
+      }
+      
+      // 更新标题编辑图标颜色
+      const titleEditIconCircle = node.select('.title-edit-icon circle')
+      const titleEditIconDiv = node.select('.title-edit-icon foreignObject div')
+      
+      if (!titleEditIconCircle.empty()) {
+        titleEditIconCircle.attr('stroke', iconColor)
+        if (!titleEditIconDiv.empty()) {
+          titleEditIconDiv.style('color', iconColor)
         }
       }
     })
@@ -1074,11 +1191,12 @@ function updateLinksPosition() {
       
       // 计算容器尺寸和位置（考虑自定义位置）
       const getContainerBounds = (node: any) => {
-        const summary = node.data.summary || node.data.content || 'No summary'
-        const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+        // 使用相同的显示文本逻辑确保一致性
+        const displayText = getDisplayText(node.data)
+        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
         const usableWidth = containerWidth * 0.6
         const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
-        const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+        const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
         // 使用自定义位置或默认位置
@@ -1178,11 +1296,12 @@ function resetLayout() {
       
       // 计算容器尺寸（使用默认位置）
       const getContainerBounds = (node: any) => {
-        const summary = node.data.summary || node.data.content || 'No summary'
-        const containerWidth = Math.max(120, Math.min(200, summary.length * 8 + 20))
+        // 使用相同的显示文本逻辑确保一致性
+        const displayText = getDisplayText(node.data)
+        const containerWidth = Math.max(120, Math.min(200, displayText.length * 8 + 20))
         const usableWidth = containerWidth * 0.6
         const maxCharsPerLine = Math.max(6, Math.min(12, Math.floor(usableWidth / 10)))
-        const estimatedLines = Math.min(3, Math.ceil(summary.length / maxCharsPerLine))
+        const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
         const height = Math.max(28, estimatedLines * 16 + 16)
         
         return {
@@ -1215,6 +1334,100 @@ function resetLayout() {
     customNodePositions.value = {}
     saveCustomPositions()
   })
+}
+
+// 获取节点显示文本：title不为空时显示title，否则显示summary
+function getDisplayText(node: ConversationTreeNode): string {
+  // 检查title是否存在且不为空（去除空格后）
+  const hasValidTitle = node.title && node.title.trim().length > 0
+  return hasValidTitle ? node.title.trim() : (node.summary || 'No summary')
+}
+
+// 标题编辑图标点击事件
+function handleTitleEditIconClick(node: ConversationTreeNode) {
+  titleEditForm.value = {
+    conversationId: node.conversationId,
+    currentTitle: node.title || '',
+    newTitle: node.title || ''
+  }
+  showTitleEditModal.value = true
+  
+  // 聚焦到输入框
+  nextTick(() => {
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+    }
+  })
+}
+
+// 保存标题编辑
+async function handleSaveTitleEdit() {
+  if (!titleEditForm.value.conversationId) return
+
+  // 保存参数到局部变量，避免在异步过程中被修改
+  const conversationId = titleEditForm.value.conversationId
+  const newTitle = titleEditForm.value.newTitle.trim()
+
+  try {
+    titleEditLoading.value = true
+    
+    // 调用后端API更新标题
+    const response = await fetch('/api/dialog/conversations/title', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: conversationId,
+        title: newTitle
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    
+    if (result.code === 0) {
+      // 成功更新，关闭模态框
+      showTitleEditModal.value = false
+      
+      // 重新获取对话树数据以刷新显示
+      if (dialogStore.dialogTreeData) {
+        await dialogStore.refreshDialogTreeData(
+          dialogStore.dialogTreeData.sessionId, 
+          conversationId
+        )
+        
+        // 等待数据更新完成，然后强制重新渲染树结构
+        await nextTick()
+        await nextTick(() => {
+          // 完全重新渲染树结构，确保连接线和节点尺寸都得到更新
+          renderTree()
+          // 再次更新连接线位置以确保它们正确连接到调整后的节点
+          updateLinksPosition()
+        })
+      }
+    } else {
+      throw new Error(result.msg || '更新失败')
+    }
+  } catch (error) {
+    console.error('Failed to update conversation title:', error)
+    // 这里可以添加错误提示
+  } finally {
+    titleEditLoading.value = false
+  }
+}
+
+// 取消标题编辑
+function handleCancelTitleEdit() {
+  showTitleEditModal.value = false
+  titleEditForm.value = {
+    conversationId: null,
+    currentTitle: '',
+    newTitle: ''
+  }
 }
 </script>
 
@@ -1361,7 +1574,7 @@ function resetLayout() {
     }
   }
   
-  .comment-icon {
+  .comment-icon, .title-edit-icon {
     circle {
       transition: fill 0.2s ease;
     }
@@ -1483,6 +1696,28 @@ function resetLayout() {
   100% {
     opacity: 0;
     transform: translateX(-50%) translateY(-100%) scale(0.9);
+  }
+}
+
+// 标题编辑模态框样式
+.title-edit-content {
+  .current-title-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    
+    .title-label {
+      font-weight: 500;
+      color: #333;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    
+    .current-title-text {
+      color: #666;
+      font-style: italic;
+      word-break: break-all;
+    }
   }
 }
 </style>
