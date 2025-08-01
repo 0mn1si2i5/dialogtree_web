@@ -5,7 +5,8 @@ import {
   transformDialogTreeToConversationTree,
   buildChatHistoryFromAncestors,
   getAncestorNodeIds,
-  getStarredNodeIds 
+  getStarredNodeIds,
+  getLatestConversationId 
 } from '@/utils/treeTransform'
 import type { 
   DialogTreeData, 
@@ -140,6 +141,13 @@ export const useDialogStore = defineStore('dialog', () => {
       // 如果没有对话树数据，确保聊天历史为空
       if (!data.dialogTree || data.dialogTree.length === 0) {
         ancestorConversations.value = []
+      } else {
+        // 自动选择最新的对话
+        const latestConversationId = getLatestConversationId(conversationTree.value)
+        if (latestConversationId) {
+          selectedConversationId.value = latestConversationId
+          await fetchAncestors(latestConversationId)
+        }
       }
       
     } catch (err) {

@@ -14,6 +14,8 @@ export const dialogApi = {
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     try {
+      console.log('🔄 [SSE_TIMEOUT_DEBUG] Starting SSE connection')
+      
       const response = await fetch('/api/dialog/chat', {
         method: 'POST',
         headers: {
@@ -36,11 +38,24 @@ export const dialogApi = {
       let buffer = ''
       let hasReceivedDone = false
       let lastMessageTime = Date.now()
+      let lastConnectionTime = Date.now()
+      let totalDataReceived = 0
+      let totalMessagesProcessed = 0
+
+      console.log('⏰ [SSE_TIMEOUT_DEBUG] Connection established at:', new Date().toISOString())
 
       // 设置活跃性检测，每20秒检查一次是否有新数据
       const checkActivity = () => {
         const now = Date.now()
-        if (now - lastMessageTime > 60000) { // 60秒无数据则超时
+        const timeSinceLastConnection = now - lastConnectionTime
+        
+        console.log('🔍 [SSE_TIMEOUT_DEBUG] Activity check: connection idle for', Math.round(timeSinceLastConnection/1000) + 's', `(${totalDataReceived} packets, ${totalMessagesProcessed} messages)`)
+        
+        if (timeSinceLastConnection > 60000) { // 60秒无任何数据则超时
+          console.error('❌ [SSE_TIMEOUT_DEBUG] TIMEOUT DETECTED!')
+          console.error('❌ [SSE_TIMEOUT_DEBUG] Last connection:', new Date(lastConnectionTime).toISOString())
+          console.error('❌ [SSE_TIMEOUT_DEBUG] Idle time:', Math.round(timeSinceLastConnection/1000) + 's')
+          console.error('❌ [SSE_TIMEOUT_DEBUG] Stats: packets=' + totalDataReceived + ', messages=' + totalMessagesProcessed)
           onError('响应超时，请重试')
           if (timeoutId) clearTimeout(timeoutId)
         } else {
@@ -52,11 +67,16 @@ export const dialogApi = {
       while (true) {
         const { done, value } = await reader.read()
         
+        // 更新连接活跃时间（任何数据包都算活跃）
+        lastConnectionTime = Date.now()
+        totalDataReceived++
+        
         if (done) {
+          console.log('✅ [SSE_TIMEOUT_DEBUG] Stream completed successfully:', totalMessagesProcessed + ' messages received')
+          
           // 如果流结束但没有收到完成信号，说明后端没有发送done信号
           // 这是正常情况，我们需要手动触发完成回调
           if (!hasReceivedDone) {
-            console.log('SSE stream ended without done signal, triggering completion manually')
             // 由于后端没有提供具体的ID信息，我们传递一个特殊标记
             // 让上层逻辑去获取最新创建的对话信息
             onComplete({
@@ -67,41 +87,47 @@ export const dialogApi = {
           break
         }
 
-        // 更新最后接收消息的时间
-        lastMessageTime = Date.now()
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        
-        // 保留最后一行可能不完整的数据
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('event:message')) continue
+        if (value && value.length > 0) {
+          const decodedData = decoder.decode(value, { stream: true })
+          buffer += decodedData
+          const lines = buffer.split('\n')
           
-          if (line.startsWith('data:')) {
-            const content = line.substring(5).trim()
+          // 保留最后一行可能不完整的数据
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('event:message')) continue
             
-            if (content === '') continue
-            
-            try {
-              // 尝试解析JSON结构的完成数据
-              const parsed = JSON.parse(content) as SSEMessage
-              if (parsed.type === 'done' && parsed.data) {
-                hasReceivedDone = true
-                if (timeoutId) clearTimeout(timeoutId)
-                onComplete(parsed.data)
-                return
+            if (line.startsWith('data:')) {
+              const content = line.substring(5).trim()
+              
+              if (content === '') continue
+              
+              // 更新消息时间（只有实际内容才更新）
+              lastMessageTime = Date.now()
+              totalMessagesProcessed++
+              
+              try {
+                // 尝试解析JSON结构的完成数据
+                const parsed = JSON.parse(content) as SSEMessage
+                
+                if (parsed.type === 'done' && parsed.data) {
+                  console.log('✅ [SSE_TIMEOUT_DEBUG] Done signal received, completing...')
+                  hasReceivedDone = true
+                  if (timeoutId) clearTimeout(timeoutId)
+                  onComplete(parsed.data)
+                  return
+                }
+              } catch {
+                // 如果不是JSON，则是普通消息内容
+                onMessage(content)
               }
-            } catch {
-              // 如果不是JSON，则是普通消息内容
-              onMessage(content)
             }
           }
         }
       }
     } catch (error) {
-      console.error('SSE Error:', error)
+      console.error('❌ [SSE_TIMEOUT_DEBUG] Connection error:', error instanceof Error ? error.message : 'Unknown error')
       onError(error instanceof Error ? error.message : '流式响应错误')
     } finally {
       if (timeoutId) clearTimeout(timeoutId)

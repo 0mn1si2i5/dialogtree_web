@@ -231,3 +231,29 @@ export function getStarredNodeIds(conversationTree: ConversationTreeNode | null)
   traverse(conversationTree)
   return Array.from(new Set(starredIds)) // 去重
 }
+
+/**
+ * 获取对话树中最新的conversation ID
+ * 遍历整个树找到 createdAt 时间最新的节点
+ */
+export function getLatestConversationId(conversationTree: ConversationTreeNode | null): number | null {
+  if (!conversationTree) return null
+
+  let latestNode: ConversationTreeNode | null = null
+  let latestTime = 0
+
+  function traverse(node: ConversationTreeNode) {
+    const nodeTime = new Date(node.createdAt).getTime()
+    if (nodeTime > latestTime) {
+      latestTime = nodeTime
+      latestNode = node
+    }
+    
+    for (const child of node.children) {
+      traverse(child)
+    }
+  }
+
+  traverse(conversationTree)
+  return latestNode ? latestNode.conversationId : null
+}
