@@ -239,21 +239,23 @@ export function getStarredNodeIds(conversationTree: ConversationTreeNode | null)
 export function getLatestConversationId(conversationTree: ConversationTreeNode | null): number | null {
   if (!conversationTree) return null
 
-  let latestNode: ConversationTreeNode | null = null
+  let latestConversationId: number | null = null
   let latestTime = 0
 
-  function traverse(node: ConversationTreeNode) {
+  function traverse(node: ConversationTreeNode): void {
     const nodeTime = new Date(node.createdAt).getTime()
     if (nodeTime > latestTime) {
       latestTime = nodeTime
-      latestNode = node
+      latestConversationId = node.conversationId
     }
     
-    for (const child of node.children) {
-      traverse(child)
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        traverse(child)
+      }
     }
   }
 
   traverse(conversationTree)
-  return latestNode ? latestNode.conversationId : null
+  return latestConversationId
 }
