@@ -40,7 +40,26 @@ export default {
     addComment: 'Add Comment',
     continueConversation: 'Continue from here',
     comment: 'Comment',
-    viewComment: 'View Comment'
+    viewComment: 'View Comment',
+    renameSession: 'Rename Session',
+    hidePanel: 'Hide Chat Panel',
+    maximizePanel: 'Maximize Chat Panel',
+    restorePanel: 'Restore Normal Size',
+    editTitle: 'Edit Title',
+    commentSaveSuccess: 'Comment saved successfully',
+    commentSaveFailed: 'Save failed',
+    addCommentModal: 'Add Comment',
+    addCommentPlaceholder: 'Enter comment...',
+    editTitleModal: 'Edit Conversation Title',
+    currentTitle: 'Current Title:',
+    noTitle: 'No Title',
+    newTitle: 'New Title',
+    newTitlePlaceholder: 'Enter new title...',
+    titleUpdateSuccess: 'Title updated successfully',
+    titleUpdateFailed: 'Update failed',
+    renameSuccess: 'Renamed successfully',
+    renameFailed: 'Rename failed',
+    enterTitle: 'Please enter session title'
   },
   
   tree: {
@@ -51,6 +70,8 @@ export default {
     restorePanel: 'Restore Normal Size',
     hidePanel: 'Hide Chat Panel',
     showPanel: 'Show Chat Panel',
+    hideSidebar: 'Hide Sidebar',
+    showSidebar: 'Show Sidebar',
     dragHint: 'Hold Cmd/Alt+Left Click to drag'
   },
   

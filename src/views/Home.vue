@@ -17,7 +17,7 @@
           <div 
             class="sidebar-hide-btn"
             @click="toggleSidebar"
-            title="隐藏侧边栏"
+            :title="$t('tree.hideSidebar')"
           >
             <icon-left />
           </div>
@@ -29,7 +29,7 @@
         v-show="!sidebarVisible" 
         class="sidebar-toggle-btn"
         @click="toggleSidebar"
-        title="显示侧边栏"
+        :title="$t('tree.showSidebar')"
       >
         <icon-right />
       </div>
@@ -51,7 +51,7 @@
           v-show="chatPanelMode !== 'hidden'"
           class="chat-panel-maximize-btn"
           @click="toggleMaximize"
-          :title="chatPanelMode === 'normal' ? '最大化聊天面板' : '恢复正常大小'"
+          :title="chatPanelMode === 'normal' ? $t('chat.maximizePanel') : $t('chat.restorePanel')"
         >
           <icon-left v-if="chatPanelMode === 'normal'" />
           <icon-right v-else />
@@ -63,7 +63,7 @@
         v-show="chatPanelMode === 'hidden'" 
         class="chat-panel-toggle-btn"
         @click="restoreChatPanel"
-        title="显示聊天面板"
+        :title="$t('tree.showPanel')"
       >
         <icon-left />
       </div>

@@ -81,7 +81,7 @@
     <!-- 标题编辑模态框 -->
     <a-modal
       v-model:visible="showTitleEditModal"
-      title="编辑对话标题"
+      :title="$t('chat.editTitleModal')"
       width="450px"
       :body-style="{ padding: '20px' }"
       :ok-loading="titleEditLoading"
@@ -89,13 +89,13 @@
     >
       <div class="title-edit-content">
         <div class="current-title-section">
-          <label class="title-label">当前标题：</label>
-          <span class="current-title-text">{{ titleEditForm.currentTitle || '无标题' }}</span>
+          <label class="title-label">{{ $t('chat.currentTitle') }}</label>
+          <span class="current-title-text">{{ titleEditForm.currentTitle || $t('chat.noTitle') }}</span>
         </div>
-        <a-form-item label="新标题" style="margin-top: 16px;">
+        <a-form-item :label="$t('chat.newTitle')" style="margin-top: 16px;">
           <a-input 
             v-model="titleEditForm.newTitle"
-            placeholder="请输入新标题..."
+            :placeholder="$t('chat.newTitlePlaceholder')"
             @keydown.enter="handleSaveTitleEdit"
             ref="titleInputRef"
           />
@@ -103,13 +103,13 @@
       </div>
       
       <template #footer>
-        <a-button @click="handleCancelTitleEdit">取消</a-button>
+        <a-button @click="handleCancelTitleEdit">{{ $t('common.cancel') }}</a-button>
         <a-button 
           type="primary" 
           @click="handleSaveTitleEdit"
           :loading="titleEditLoading"
         >
-          保存
+          {{ $t('common.save') }}
         </a-button>
       </template>
     </a-modal>
@@ -428,7 +428,7 @@ function renderLinks(links: d3.HierarchyLink<ConversationTreeNode>[]) {
         const usableWidth = containerWidth * 0.88
         const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
-        const height = Math.max(28, estimatedLines * 16 + 16)
+        const height = Math.max(28, estimatedLines * 16 + 12)
         
         // 使用自定义位置或默认位置
         const customPos = customNodePositions.value[node.data.conversationId]
@@ -591,7 +591,7 @@ function renderNodes(nodes: d3.HierarchyNode<ConversationTreeNode>[]) {
     const usableWidth = containerWidth * 0.88
     const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
     const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
-    const height = Math.max(28, estimatedLines * 16 + 16)
+    const height = Math.max(28, estimatedLines * 16 + 12)
     
     // 检查哪些图标需要显示
     const hasComment = d.data.comment && d.data.comment.trim()
@@ -723,7 +723,7 @@ function updateNodeTexts(selection: d3.Transition<SVGGElement, d3.HierarchyNode<
       const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
       
       const width = containerWidth
-      const height = Math.max(28, estimatedLines * 16 + 16) // 进一步增加高度边距
+      const height = Math.max(28, estimatedLines * 16 + 12) // 调整边距让文本更贴近边框
       
       d3.select(this)
         .attr('x', -width / 2)
@@ -1263,7 +1263,7 @@ function updateLinksPosition() {
         const usableWidth = containerWidth * 0.88
         const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
-        const height = Math.max(28, estimatedLines * 16 + 16)
+        const height = Math.max(28, estimatedLines * 16 + 12)
         
         // 使用自定义位置或默认位置
         const customPos = customNodePositions.value[node.data.conversationId]
@@ -1369,7 +1369,7 @@ function resetLayout() {
         const usableWidth = containerWidth * 0.88
         const maxCharsPerLine = calculateMaxCharsPerLine(displayText, usableWidth)
         const estimatedLines = Math.min(3, Math.ceil(displayText.length / maxCharsPerLine))
-        const height = Math.max(28, estimatedLines * 16 + 16)
+        const height = Math.max(28, estimatedLines * 16 + 12)
         
         return {
           width: containerWidth,

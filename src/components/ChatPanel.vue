@@ -12,7 +12,7 @@
           type="text" 
           size="mini"
           @click="showRenameSessionDialog"
-          title="重命名会话"
+          :title="$t('chat.renameSession')"
           class="rename-session-btn"
         >
           <template #icon>
@@ -28,7 +28,7 @@
           type="text" 
           size="small" 
           @click="hideChatPanel"
-          title="隐藏聊天面板"
+          :title="$t('chat.hidePanel')"
         >
           <template #icon>
             <icon-right />
@@ -178,7 +178,7 @@
     <!-- 评论模态框 -->
     <a-modal
       v-model:visible="showCommentModalVisible"
-      title="添加评论"
+      :title="$t('chat.addCommentModal')"
       width="600px"
       :body-style="{ padding: '10px 20px 0 20px' }"
       :footer-style="{ borderTop: '10px solid #f0f0f0', paddingTop: '10px' }"
@@ -189,7 +189,7 @@
         <a-form-item>
           <a-textarea
             v-model="commentForm.comment"
-            placeholder="请输入评论..."
+            :placeholder="$t('chat.addCommentPlaceholder')"
             :auto-size="{ minRows: 4, maxRows: 10 }"
             @keydown.ctrl.enter="handleSaveComment"
           />
@@ -197,13 +197,13 @@
       </a-form>
       
       <template #footer>
-        <a-button @click="handleCancelComment">取消</a-button>
+        <a-button @click="handleCancelComment">{{ $t('common.cancel') }}</a-button>
         <a-button 
           type="primary" 
           @click="handleSaveComment"
           :loading="commentLoading"
         >
-          保存
+          {{ $t('common.save') }}
         </a-button>
       </template>
     </a-modal>
@@ -211,7 +211,7 @@
     <!-- 重命名会话模态框 -->
     <a-modal
       v-model:visible="showRenameSessionModal"
-      title="重命名会话"
+      :title="$t('chat.renameSession')"
       width="400px"
       :body-style="{ padding: '20px' }"
       :ok-loading="renameSessionLoading"
@@ -219,10 +219,10 @@
       @cancel="resetRenameSessionForm"
     >
       <a-form :model="renameSessionForm" layout="vertical">
-        <a-form-item label="会话标题" required>
+        <a-form-item :label="$t('session.sessionTitle')" required>
           <a-input 
             v-model="renameSessionForm.title"
-            placeholder="请输入会话标题..."
+            :placeholder="$t('session.enterSessionTitle')"
             @keydown.enter="handleRenameSession"
           />
         </a-form-item>
@@ -370,10 +370,10 @@ async function handleSaveComment() {
       commentForm.value.conversationId,
       commentForm.value.comment // 不使用 trim()，允许保存空评论（包括空字符串）
     )
-    Message.success('评论保存成功')
+    Message.success(t('chat.commentSaveSuccess'))
     showCommentModalVisible.value = false
   } catch (error) {
-    Message.error('保存失败')
+    Message.error(t('chat.commentSaveFailed'))
   } finally {
     commentLoading.value = false
   }
@@ -434,7 +434,7 @@ function showRenameSessionDialog() {
 // 处理会话重命名
 async function handleRenameSession() {
   if (!renameSessionForm.value.title?.trim() || !renameSessionForm.value.sessionId) {
-    Message.warning('请输入会话标题')
+    Message.warning(t('chat.enterTitle'))
     return
   }
   
@@ -447,11 +447,11 @@ async function handleRenameSession() {
       categoryID: currentSession?.categoryID || 1,
     })
     
-    Message.success('重命名成功')
+    Message.success(t('chat.renameSuccess'))
     showRenameSessionModal.value = false
     resetRenameSessionForm()
   } catch (error) {
-    Message.error('重命名失败')
+    Message.error(t('chat.renameFailed'))
   } finally {
     renameSessionLoading.value = false
   }
@@ -612,7 +612,7 @@ function resetRenameSessionForm() {
 
 .message-content {
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   position: relative;
   min-width: 0;
 }

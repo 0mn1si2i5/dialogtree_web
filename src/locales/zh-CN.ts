@@ -40,7 +40,26 @@ export default {
     addComment: '添加评论',
     continueConversation: '从此处继续对话',
     comment: '评论',
-    viewComment: '查看评论'
+    viewComment: '查看评论',
+    renameSession: '重命名会话',
+    hidePanel: '隐藏聊天面板',
+    maximizePanel: '最大化聊天面板',
+    restorePanel: '恢复正常大小',
+    editTitle: '编辑标题',
+    commentSaveSuccess: '评论保存成功',
+    commentSaveFailed: '保存失败',
+    addCommentModal: '添加评论',
+    addCommentPlaceholder: '请输入评论...',
+    editTitleModal: '编辑对话标题',
+    currentTitle: '当前标题：',
+    noTitle: '无标题',
+    newTitle: '新标题',
+    newTitlePlaceholder: '请输入新标题...',
+    titleUpdateSuccess: '标题更新成功',
+    titleUpdateFailed: '更新失败',
+    renameSuccess: '重命名成功',
+    renameFailed: '重命名失败',
+    enterTitle: '请输入会话标题'
   },
   
   tree: {
@@ -51,6 +70,8 @@ export default {
     restorePanel: '恢复正常大小',
     hidePanel: '隐藏聊天面板',
     showPanel: '显示聊天面板',
+    hideSidebar: '隐藏侧边栏',
+    showSidebar: '显示侧边栏',
     dragHint: '按住 Cmd/Alt+左键可以拖动'
   },
   
