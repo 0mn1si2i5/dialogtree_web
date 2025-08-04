@@ -93,7 +93,13 @@ export default {
     enterCategoryName: '请输入分类名称',
     enterNewSessionTitle: '请输入新的会话标题',
     enterNewCategoryName: '请输入新的分类名称',
-    selectNewCategory: '选择新的分类'
+    selectNewCategory: '选择新的分类',
+    confirmDelete: '确认删除',
+    deleteSessionConfirm: '确定要删除会话"{title}"吗？此操作不可恢复。',
+    deleteCategoryConfirm: '确定要删除分类"{name}"吗？',
+    deleteSuccess: '删除成功',
+    deleteFailed: '删除失败',
+    categoryHasSessionsWarning: '该分类下还有 {count} 个会话，请先移动或删除这些会话'
   },
   
   header: {

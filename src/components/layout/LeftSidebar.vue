@@ -301,14 +301,14 @@ function handleCategoryAction(action: string, category: Category) {
 // 确认删除会话
 function confirmDeleteSession(session: Session) {
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除会话"${session.title}"吗？此操作不可恢复。`,
+    title: t('session.confirmDelete'),
+    content: t('session.deleteSessionConfirm', { title: session.title }),
     onOk: async () => {
       try {
         await sessionStore.deleteSession(session.id)
-        Message.success('删除成功')
+        Message.success(t('session.deleteSuccess'))
       } catch (error) {
-        Message.error('删除失败')
+        Message.error(t('session.deleteFailed'))
       }
     }
   })
@@ -318,19 +318,19 @@ function confirmDeleteSession(session: Session) {
 function confirmDeleteCategory(category: Category) {
   const sessionCount = getSessionCountByCategory(category.id)
   if (sessionCount > 0) {
-    Message.warning(`该分类下还有 ${sessionCount} 个会话，请先移动或删除这些会话`)
+    Message.warning(t('session.categoryHasSessionsWarning', { count: sessionCount }))
     return
   }
 
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除分类"${category.name}"吗？`,
+    title: t('session.confirmDelete'),
+    content: t('session.deleteCategoryConfirm', { name: category.name }),
     onOk: async () => {
       try {
         await sessionStore.deleteCategory(category.id)
-        Message.success('删除成功')
+        Message.success(t('session.deleteSuccess'))
       } catch (error) {
-        Message.error('删除失败')
+        Message.error(t('session.deleteFailed'))
       }
     }
   })

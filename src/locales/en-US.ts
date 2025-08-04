@@ -93,7 +93,13 @@ export default {
     enterCategoryName: 'Enter category name',
     enterNewSessionTitle: 'Enter new session title',
     enterNewCategoryName: 'Enter new category name',
-    selectNewCategory: 'Select new category'
+    selectNewCategory: 'Select new category',
+    confirmDelete: 'Confirm Delete',
+    deleteSessionConfirm: 'Are you sure you want to delete session "{title}"? This action cannot be undone.',
+    deleteCategoryConfirm: 'Are you sure you want to delete category "{name}"?',
+    deleteSuccess: 'Deleted successfully',
+    deleteFailed: 'Delete failed',
+    categoryHasSessionsWarning: 'This category contains {count} sessions. Please move or delete these sessions first.'
   },
   
   header: {
