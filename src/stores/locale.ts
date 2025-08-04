@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { detectBrowserLanguage, detectLanguageFromAcceptHeader, type Language } from '@/utils/languageDetector'
+import i18n from '@/locales'
 
 export const useLocaleStore = defineStore('locale', () => {
   // 状态
@@ -8,14 +9,27 @@ export const useLocaleStore = defineStore('locale', () => {
   
   // 初始化
   function initialize() {
+    // 每次应用启动都重新检测浏览器语言，不依赖localStorage
+    const detectionResult = detectBrowserLanguage()
+    const detectedLanguage = detectionResult.language
+    
+    // 检查是否与保存的语言不同
     const savedLocale = localStorage.getItem('locale')
-    if (savedLocale && ['zh-CN', 'en-US'].includes(savedLocale)) {
+    if (savedLocale !== detectedLanguage) {
+      // 自动切换到检测到的语言
+      currentLocale.value = detectedLanguage
+      localStorage.setItem('locale', detectedLanguage)
+    } else if (savedLocale) {
+      // 语言没有变化，使用保存的语言
       currentLocale.value = savedLocale
     } else {
-      // 根据浏览器语言自动选择
-      const browserLocale = navigator.language
-      currentLocale.value = browserLocale.startsWith('zh') ? 'zh-CN' : 'en-US'
+      // 首次访问
+      currentLocale.value = detectedLanguage
+      localStorage.setItem('locale', detectedLanguage)
     }
+    
+    // 确保i18n实例的locale与store保持同步
+    i18n.global.locale.value = currentLocale.value as any
   }
   
   // 切换语言
@@ -27,6 +41,9 @@ export const useLocaleStore = defineStore('locale', () => {
     
     currentLocale.value = locale
     localStorage.setItem('locale', locale)
+    
+    // 同步更新i18n实例的locale
+    i18n.global.locale.value = locale as any
   }
   
   // 切换语言（中英文互换）
@@ -45,6 +62,19 @@ export const useLocaleStore = defineStore('locale', () => {
     return currentLocale.value === 'zh-CN' ? '' : ''
   }
   
+  // 根据Accept-Language请求头检测并设置语言
+  function detectAndSetLanguageFromRequest(acceptLanguageHeader?: string): Language {
+    const detectionResult = detectLanguageFromAcceptHeader(acceptLanguageHeader)
+    
+    // 只有检测结果与当前语言不同时才切换
+    if (detectionResult.language !== currentLocale.value) {
+      setLocale(detectionResult.language)
+    }
+    
+    return detectionResult.language
+  }
+  
+  
   return {
     // 状态
     currentLocale,
@@ -54,6 +84,7 @@ export const useLocaleStore = defineStore('locale', () => {
     setLocale,
     toggleLocale,
     getCurrentLocaleName,
-    getToggleButtonText
+    getToggleButtonText,
+    detectAndSetLanguageFromRequest
   }
 })

@@ -14,7 +14,6 @@ export const dialogApi = {
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     try {
-      console.log('🔄 [SSE_TIMEOUT_DEBUG] Starting SSE connection')
       
       const response = await fetch('/api/dialog/chat', {
         method: 'POST',
@@ -42,20 +41,14 @@ export const dialogApi = {
       let totalDataReceived = 0
       let totalMessagesProcessed = 0
 
-      console.log('⏰ [SSE_TIMEOUT_DEBUG] Connection established at:', new Date().toISOString())
 
       // 设置活跃性检测，每20秒检查一次是否有新数据
       const checkActivity = () => {
         const now = Date.now()
         const timeSinceLastConnection = now - lastConnectionTime
         
-        console.log('🔍 [SSE_TIMEOUT_DEBUG] Activity check: connection idle for', Math.round(timeSinceLastConnection/1000) + 's', `(${totalDataReceived} packets, ${totalMessagesProcessed} messages)`)
         
         if (timeSinceLastConnection > 60000) { // 60秒无任何数据则超时
-          console.error('❌ [SSE_TIMEOUT_DEBUG] TIMEOUT DETECTED!')
-          console.error('❌ [SSE_TIMEOUT_DEBUG] Last connection:', new Date(lastConnectionTime).toISOString())
-          console.error('❌ [SSE_TIMEOUT_DEBUG] Idle time:', Math.round(timeSinceLastConnection/1000) + 's')
-          console.error('❌ [SSE_TIMEOUT_DEBUG] Stats: packets=' + totalDataReceived + ', messages=' + totalMessagesProcessed)
           onError('响应超时，请重试')
           if (timeoutId) clearTimeout(timeoutId)
         } else {
@@ -72,7 +65,6 @@ export const dialogApi = {
         totalDataReceived++
         
         if (done) {
-          console.log('✅ [SSE_TIMEOUT_DEBUG] Stream completed successfully:', totalMessagesProcessed + ' messages received')
           
           // 如果流结束但没有收到完成信号，说明后端没有发送done信号
           // 这是正常情况，我们需要手动触发完成回调
@@ -112,7 +104,6 @@ export const dialogApi = {
                 const parsed = JSON.parse(content) as SSEMessage
                 
                 if (parsed.type === 'done' && parsed.data) {
-                  console.log('✅ [SSE_TIMEOUT_DEBUG] Done signal received, completing...')
                   hasReceivedDone = true
                   if (timeoutId) clearTimeout(timeoutId)
                   onComplete(parsed.data)
@@ -127,7 +118,6 @@ export const dialogApi = {
         }
       }
     } catch (error) {
-      console.error('❌ [SSE_TIMEOUT_DEBUG] Connection error:', error instanceof Error ? error.message : 'Unknown error')
       onError(error instanceof Error ? error.message : '流式响应错误')
     } finally {
       if (timeoutId) clearTimeout(timeoutId)

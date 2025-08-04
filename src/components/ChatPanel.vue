@@ -235,7 +235,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Message } from '@arco-design/web-vue'
-import { useSessionStore, useDialogStore, useLayoutStore } from '@/stores'
+import { useSessionStore, useDialogStore, useLayoutStore, useLocaleStore } from '@/stores'
 import { 
   IconUser, 
   IconRobot, 
@@ -257,6 +257,7 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 const sessionStore = useSessionStore()
 const dialogStore = useDialogStore()
 const layoutStore = useLayoutStore()
+const localeStore = useLocaleStore()
 const { t } = useI18n()
 
 // 响应式状态

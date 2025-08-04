@@ -13,6 +13,11 @@ const http: AxiosInstance = axios.create({
 // 请求拦截器
 http.interceptors.request.use(
   (config) => {
+    // 添加当前语言到请求头
+    const currentLocale = localStorage.getItem('locale') || 'zh-CN'
+    config.headers['Accept-Language'] = currentLocale
+    config.headers['X-User-Language'] = currentLocale
+    
     // 这里可以添加认证token等
     return config
   },
